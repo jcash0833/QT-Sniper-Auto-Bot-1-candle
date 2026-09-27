@@ -1,0 +1,3208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>QT Sniper Auto Bot</title>
+
+<!-- Framework CSS + JS — required for all widgets -->
+<link rel="stylesheet" type="text/css" href="https://mytrader.fxbluelabs.com/css/widget-css"/>
+<script src="https://mytrader.fxbluelabs.com/scripts/widget-js"></script>
+
+<style>
+html, body {
+  margin: 0; padding: 0; height: 100%;
+  font-family: var(--font-family, system-ui);
+  font-size: var(--font-size-base, 13px);
+  color: #dfe7ff;
+  background: radial-gradient(ellipse at top, #0f1730 0%, #070b16 70%);
+  overflow: hidden;
+}
+body { display: flex; flex-direction: column; }
+.widget-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding-block: 12px;
+  padding-inline-start: 16px;
+  padding-inline-end: var(--widget-chrome-inset-horizontal, 40px);
+  border-bottom: 1px solid rgba(56,214,255,0.18);
+  font-weight: 700; font-size: 15px; letter-spacing: 0.3px;
+  color: #6fe3ff; text-shadow: 0 0 10px rgba(111,227,255,0.35);
+  flex: 0 0 auto;
+}
+#minimizeBtn {
+  background: rgba(111,227,255,0.08); border: 1px solid rgba(111,227,255,0.3);
+  border-radius: 6px; width: 26px; height: 26px; line-height: 1; font-size: 14px;
+  padding: 0; color: #6fe3ff; cursor: pointer;
+}
+#content {
+  padding: 14px 16px 20px;
+  overflow-y: auto;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+body.minimized #content { display: none; }
+.row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+.row label { flex: 0 0 150px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.4px; opacity: 0.75; }
+.row input[type="text"], .row input[type="number"], .row select {
+  flex: 1 1 100px; min-width: 70px;
+  background: #0c1224;
+  color: #eaf2ff;
+  border: 1px solid rgba(111,227,255,0.25);
+  border-radius: 8px; padding: 9px 10px; font-size: 13px;
+}
+.row input:focus, .row select:focus { outline: none; border-color: #6fe3ff; box-shadow: 0 0 0 2px rgba(111,227,255,0.15); }
+.row input[type="checkbox"] { width: 16px; height: 16px; }
+fieldset {
+  border: 1px solid rgba(111,227,255,0.15); border-radius: 12px; margin-bottom: 14px; padding: 12px 14px;
+  background: rgba(111,227,255,0.02);
+}
+legend { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.8; padding: 0 6px; color: #9fd8ff; }
+.btnrow { display: flex; flex-direction: column; gap: 10px; margin: 12px 0; }
+button {
+  cursor: pointer; border-radius: 10px; border: none;
+  padding: 12px 16px; font-weight: 700; font-size: 13px; letter-spacing: 0.3px;
+  background: #131a30; color: #dfe7ff; transition: transform 0.05s ease;
+}
+button:active { transform: scale(0.98); }
+.pill-btn {
+  background: linear-gradient(135deg, #2fd4ff, #3b6fff);
+  color: #04101f; box-shadow: 0 4px 14px rgba(59,111,255,0.35);
+}
+#startBtn:disabled, #stopBtn:disabled {
+  background: #1a2038; color: #5b6788; box-shadow: none; cursor: default;
+}
+#status {
+  font-weight: 700; padding: 8px 14px; border-radius: 999px; margin-bottom: 14px;
+  text-align: center; font-size: 12px; letter-spacing: 0.4px; text-transform: uppercase;
+  border: 1px solid rgba(255,255,255,0.08);
+}
+#status.stopped { background: rgba(239,83,80,0.12); color: #ff8a80; border-color: rgba(239,83,80,0.3); }
+#status.running { background: rgba(38,214,166,0.14); color: #4dffcf; border-color: rgba(38,214,166,0.35); }
+#versionBadge {
+  display: inline-block; margin-bottom: 10px; padding: 4px 10px; border-radius: 999px;
+  background: rgba(111,227,255,0.08); border: 1px solid rgba(111,227,255,0.25);
+  color: #9fd8ff; font-size: 10.5px; letter-spacing: 0.3px;
+}
+#log {
+  height: 200px; overflow-y: auto; font-family: monospace; font-size: 11.5px;
+  background: #060a16; border: 1px solid rgba(111,227,255,0.15);
+  border-radius: 10px; padding: 8px 10px; white-space: pre-wrap;
+}
+.log-buy { color: #4dffcf; }
+.log-sell { color: #ff8a80; }
+.log-info { opacity: 0.7; }
+.log-warn { color: #ffcf6f; }
+.warning-box {
+  background: rgba(255,183,77,0.10); border: 1px solid rgba(255,183,77,0.35);
+  border-radius: 10px; padding: 10px 12px; font-size: 11.5px; margin-bottom: 12px;
+}
+.intro-box {
+  background: rgba(111,227,255,0.06); border: 1px solid rgba(111,227,255,0.25);
+  border-radius: 10px; padding: 12px 14px; font-size: 12px; line-height: 1.55; margin-bottom: 14px;
+}
+.hint { display: block; font-size: 11px; opacity: 0.6; margin: -5px 0 10px 0; line-height: 1.4; }
+#advancedToggle {
+  width: 100%; text-align: center; margin-bottom: 12px;
+  background: rgba(111,227,255,0.05); border: 1px dashed rgba(111,227,255,0.25); color: #9fd8ff;
+}
+#advancedSection { display: none; }
+#advancedSection.expanded { display: block; }
+.stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 8px; }
+.stat-box { background: #0c1224; border: 1px solid rgba(111,227,255,0.18); border-radius: 10px; padding: 10px 12px; }
+.stat-label { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.3px; opacity: 0.6; display: block; margin-bottom: 4px; }
+.stat-value { font-size: 18px; font-weight: 700; color: #eaf2ff; }
+.stats-btnrow { display: flex; gap: 8px; margin-top: 4px; }
+.stats-btnrow button { flex: 1; padding: 8px 10px; font-size: 12px; }
+</style>
+</head>
+
+<body>
+<div class="widget-header">
+  <span>QT Sniper Auto Bot</span>
+  <button id="minimizeBtn" title="Minimize">▁</button>
+</div>
+<div id="content">
+
+  <span id="versionBadge">⚡ QT Sniper V3.0</span>
+
+  <div class="warning-box">
+    ⚠️ This places <b>real orders</b> the moment conditions are met (unless "Confirm every order" in Advanced is
+    ticked). Test on a demo account first. Stopping the bot does not close open trades.
+  </div>
+
+  <div id="status" class="stopped">● Bot Stopped</div>
+
+  <div class="intro-box">
+    <b>New to this? Here's all you need:</b><br>
+    Type your instrument, pick a Strategy, pick a Mode, leave everything else as shown, and press
+    Start Bot. Stop-loss, take-profit, and a trailing stop are all handled for you regardless of
+    which strategy you pick. Use <b>Test Trade</b> and "Confirm every order" (in Advanced) while
+    you're still learning how it behaves.
+  </div>
+
+  <fieldset>
+    <legend>Performance (this session)</legend>
+    <small class="hint">Tracks trades this bot has managed since the page was last loaded — not your full account history. Export to CSV before closing the tab if you want to keep a record.</small>
+    <div class="stats-grid">
+      <div class="stat-box"><span class="stat-label">Total Trades</span><span class="stat-value" id="statTotalTrades">0</span></div>
+      <div class="stat-box"><span class="stat-label">Win Rate</span><span class="stat-value" id="statWinRate">—</span></div>
+      <div class="stat-box"><span class="stat-label">Net P/L</span><span class="stat-value" id="statNetProfit">0.00</span></div>
+      <div class="stat-box"><span class="stat-label">Biggest Win / Loss</span><span class="stat-value" style="font-size:13px"><span id="statBiggestWin">—</span> / <span id="statBiggestLoss">—</span></span></div>
+    </div>
+    <div class="stats-btnrow">
+      <button type="button" id="exportCsvBtn">⬇ Export CSV</button>
+      <button type="button" id="resetStatsBtn">↺ Reset Stats</button>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Market</legend>
+    <small class="hint">Type it exactly as shown on your own chart (e.g. EUR/USD, XAU/USD, NAS100) — not a nickname like "Gold."</small>
+    <div class="row"><label>Instrument</label><input type="text" id="instrumentId" placeholder="e.g. EUR/USD, XAU/USD, NAS100, GBP/JPY"></div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Strategy</legend>
+    <small class="hint">Picks which signal engine the bot trades with. Every safety system below — sizing, stop-loss/take-profit, Auto Trailing, the Daily circuit breaker, the hard lot cap — works identically no matter which one you pick, since they all operate on the trade after it opens, not on how the signal was generated. Switching strategies never touches the other strategy's own settings — they just sit unused until you switch back. Inside "Advanced settings" below, only the fieldsets that actually apply to your chosen strategy are shown — pick your strategy first, and the rest stays out of your way.</small>
+    <div class="row"><label>Strategy</label>
+      <select id="strategySelect">
+        <option value="" selected disabled>Select a strategy...</option>
+        <option value="original">Original (Trend + Momentum)</option>
+        <option value="fvg">Fair Value Gap (FVG)</option>
+        <option value="sd">Supply &amp; Demand Zones</option>
+        <option value="onecandle">One Candlestick (Zone Scalping)</option>
+        <option value="breakretest">Break &amp; Retest</option>
+        <option value="trend2020">20/200 Trend</option>
+      </select>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Mode</legend>
+    <small class="hint">Sets the timeframe and risk profile all at once. Scalper = fast, frequent, smaller moves. Swing = slower, fewer trades, bigger moves.</small>
+    <div class="row"><label>Mode</label>
+      <select id="modeSelect">
+        <option value="" selected disabled>Select a mode...</option>
+        <option value="scalper">Scalper</option>
+        <option value="swing">Swing</option>
+      </select>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Account Size</legend>
+    <small class="hint">This sets your position sizing, daily limits, and trailing amounts all in dollars appropriate to your account — so you don't have to work out any of that math yourself. Pick the one that matches your actual balance.</small>
+    <div class="row"><label>Account Size</label>
+      <select id="accountSizeSelect">
+        <option value="" selected disabled>Select your account size...</option>
+        <option value="small">Small ($50 – $500)</option>
+        <option value="medium">Medium ($1,000 – $5,000)</option>
+        <option value="large">Large ($10,000+)</option>
+      </select>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Stop-Loss / Take-Profit</legend>
+    <small class="hint">⚠️ Turning off the stop-loss means a trade has no automatic downside exit except your Daily circuit breaker or a manual close — that's real, uncapped risk on that trade. Leave it ON unless you specifically know why you want it off.</small>
+    <div class="row"><label>Add Stop-Loss</label>
+      <select id="addStopLoss">
+        <option value="on" selected>ON (recommended)</option>
+        <option value="off">OFF</option>
+      </select>
+    </div>
+    <div class="row"><label>Add Take-Profit</label>
+      <select id="addTakeProfit">
+        <option value="on" selected>ON</option>
+        <option value="off">OFF</option>
+      </select>
+    </div>
+    <small class="hint">Take-Profit OFF just means no fixed target is set — the trade instead exits via Auto Trailing below (if on) or the stop-loss.</small>
+  </fieldset>
+
+  <fieldset>
+    <legend>Auto Trailing</legend>
+    <small class="hint">ON: once a trade is far enough in profit, the stop-loss automatically moves up to lock in gains as price keeps moving your way. OFF: the trade keeps its original stop-loss/take-profit only, untouched.</small>
+    <div class="row"><label>Auto Trailing</label>
+      <select id="autoTrailingOn">
+        <option value="on" selected>ON</option>
+        <option value="off">OFF</option>
+      </select>
+    </div>
+    <div class="row"><label>Trail After Profit ($)</label><input type="number" id="trailAfterProfitDollars" value="20" min="0" step="1"></div>
+    <div class="row"><label>Profit Lock Distance ($)</label><input type="number" id="profitLockDistanceDollars" value="8" min="0" step="1"></div>
+    <small class="hint">Once a trade is up "Trail After Profit" dollars, the stop starts following price, staying "Profit Lock Distance" dollars behind it. Tune both to your account size and instrument — these are starting points, not universal numbers.</small>
+    <div class="row"><label>Breakeven buffer ($)</label><input type="number" id="breakevenBufferDollars" value="3" min="0" step="1"></div>
+    <small class="hint">A raw "breakeven" stop at your exact entry price still costs you the spread (and any commission) if it's hit — that's a small guaranteed loss, not zero. This adds a cushion on top, so getting stopped at breakeven means a tiny locked-in win, or at worst a true $0, never a loss. Set this to roughly your instrument's typical spread + commission cost.</small>
+  </fieldset>
+
+  <fieldset>
+    <legend>Daily circuit breaker</legend>
+    <small class="hint">Set an amount and forget it — hit either one and the bot stops trading for the day on its own.</small>
+    <div class="row"><label>Daily Stop Loss ($)</label><input type="number" id="dailyMaxLoss" value="0" min="0" step="1"></div>
+    <div class="row"><label>Daily Take Profit ($)</label><input type="number" id="dailyProfitTarget" value="0" min="0" step="1"></div>
+    <div class="row"><label>Close open trades when hit</label><input type="checkbox" id="closeOnCircuitBreak" checked></div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Auto Trading</legend>
+    <small class="hint">ON (default): the bot opens new trades itself, exactly as normal. OFF: the bot opens NO new trades of its own, but keeps running — meaning it still adds a missing stop-loss/take-profit to any trade you place manually, still moves it to breakeven and trails it, and the Daily circuit breaker still protects you. Use this if you want to trade by hand while the bot handles managing the trade for you.</small>
+    <div class="row"><label>Auto Trading</label>
+      <select id="autoTradingOn">
+        <option value="on" selected>ON — bot trades automatically</option>
+        <option value="off">OFF — manage my manual trades only</option>
+      </select>
+    </div>
+  </fieldset>
+
+  <button type="button" id="advancedToggle">▸ Show advanced settings</button>
+  <div id="advancedSection">
+
+  <!-- Position sizing is always Fixed lots now — set your lot size below under "Position sizing
+       (Fixed lots mode only)". These stay wired in behind the scenes (the hard lot cap is now
+       enforced on every order, in every strategy, not just Risk % mode) but there's nothing here
+       for you to configure. -->
+  <input type="hidden" id="sizingMode" value="fixed">
+  <input type="hidden" id="baseRiskPct" value="1.0">
+  <input type="hidden" id="hardMaxLot" value="2.0">
+
+  <fieldset data-oc-strategies="original,fvg,sd,breakretest,trend2020">
+    <legend>Market (advanced override)</legend>
+    <small class="hint">Your Mode selection sets these automatically. Only change these if you want to override the Mode's defaults.</small>
+    <div class="row"><label>Trading timeframe</label>
+      <select id="timeframe">
+        <option value="60">M1</option>
+        <option value="300">M5</option>
+        <option value="900" selected>M15</option>
+        <option value="1800">M30</option>
+        <option value="3600">H1</option>
+        <option value="14400">H4</option>
+      </select>
+    </div>
+    <div class="row"><label>Pivot period</label>
+      <select id="pivotTf">
+        <option value="86400" selected>Daily (for M1–M30 charts)</option>
+        <option value="604800">Weekly (for H1–H4 charts)</option>
+        <option value="2592000">Monthly (for D1 charts)</option>
+      </select>
+    </div>
+  </fieldset>
+
+  <fieldset data-oc-strategies="original,breakretest">
+    <legend>Trend / signal (Overkill Scalper logic)</legend>
+    <small class="hint">These are the same numbers the Overkill Scalper indicator uses. The defaults ARE the strategy — only change these if you understand what you're adjusting. Used by both Original and Break &amp; Retest.</small>
+    <div class="row"><label>Fast EMA</label><input type="number" id="fastLen" value="5" min="2" max="50"></div>
+    <div class="row"><label>Mid EMA (trend line)</label><input type="number" id="midLen" value="13" min="5" max="100"></div>
+    <div class="row"><label>Slow EMA</label><input type="number" id="slowLen" value="34" min="10" max="300"></div>
+    <div class="row"><label>Min candle / ATR</label><input type="number" id="atrMult" value="0.2" min="0.05" max="3" step="0.05"></div>
+  </fieldset>
+
+  <fieldset data-oc-strategies="original,breakretest">
+    <legend>Higher-Timeframe Trend Filter</legend>
+    <small class="hint">A local trend on a fast timeframe can just be a temporary bounce inside a bigger move going the other way — this is what makes an entry look right the moment it fires and then reverse almost immediately. When ON, every entry also has to agree with the trend on a genuinely bigger timeframe before it's allowed to fire. This is fully automatic — Scalper (M5) checks against H1, Swing (H1) checks against H4 — nothing to configure.</small>
+    <div class="row"><label>Require higher-timeframe agreement</label><input type="checkbox" id="requireHtfAgreement" checked></div>
+  </fieldset>
+
+  <fieldset data-oc-strategies="fvg">
+    <legend>Fair Value Gap (FVG) settings</legend>
+    <small class="hint">Only used when Strategy above is set to "Fair Value Gap (FVG)". A Fair Value Gap is a 3-candle imbalance — candle 1 and candle 3 don't overlap, leaving an untouched price zone in between. Rather than entering the instant a gap forms (a noisier, lower-quality version of this), the bot waits for price to pull back INTO the gap and show a reaction there before entering — the same "retest, don't chase" philosophy used everywhere else in this bot.</small>
+    <div class="row"><label>Min gap size (× ATR)</label><input type="number" id="fvgMinGapAtrMult" value="0.3" min="0.05" step="0.05"></div>
+    <small class="hint">Filters out tiny, insignificant gaps — only gaps at least this many ATRs wide count as a real Fair Value Gap.</small>
+    <div class="row"><label>Require reaction candle</label><input type="checkbox" id="fvgRequireReaction" checked></div>
+    <small class="hint">ON (recommended): only enters if the retest candle actually closes back out of the gap in the gap's favor — a real reaction, not just a touch. OFF: enters on the first touch of the gap, no confirmation required — faster but noisier.</small>
+    <div class="row"><label>Max bars gap stays active</label><input type="number" id="fvgMaxBarsActive" value="50" min="5" max="500"></div>
+    <small class="hint">A gap that's never been retested after this many bars is considered stale and gets dropped — old gaps lose relevance the longer price ignores them.</small>
+    <div class="row"><label>Stop buffer beyond gap (× ATR)</label><input type="number" id="fvgStopBufferAtrMult" value="0.2" min="0" step="0.05"></div>
+    <small class="hint">The stop-loss sits just beyond the far edge of the gap, plus this small buffer — not a generic ATR multiple from entry, since the gap's own boundary is the actual level that invalidates the setup.</small>
+  </fieldset>
+
+  <fieldset data-oc-strategies="sd">
+    <legend>Supply &amp; Demand Zone settings</legend>
+    <small class="hint">Only used when Strategy above is set to "Supply &amp; Demand Zones". Looks for a tight consolidation ("base") immediately followed by a strong breakout candle away from it — the classic Rally-Base-Drop / Drop-Base-Rally pattern. The base area itself becomes the zone: a demand zone if price broke up from it, a supply zone if price broke down. Same "wait for a real reaction on retest, don't chase" philosophy as everywhere else — plus one thing FVG doesn't track: each zone weakens with every retest, since a level that's already been tested once is statistically less reliable the next time.</small>
+    <div class="row"><label>Max base candles</label><input type="number" id="sdMaxBaseCandles" value="3" min="1" max="8"></div>
+    <small class="hint">How many consecutive tight-range candles can make up the consolidation base before the breakout candle.</small>
+    <div class="row"><label>Base candle max range (× ATR)</label><input type="number" id="sdBaseMaxRangeAtrMult" value="0.5" min="0.1" step="0.05"></div>
+    <small class="hint">How tight the base candles must be — a candle wider than this doesn't count as part of the consolidation.</small>
+    <div class="row"><label>Breakout candle min size (× ATR)</label><input type="number" id="sdBreakoutMinAtrMult" value="0.8" min="0.1" step="0.05"></div>
+    <small class="hint">How strong the move away from the base must be to count as a genuine breakout, not just noise — deliberately stricter than a normal entry candle, since this is what defines the whole zone.</small>
+    <div class="row"><label>Require reaction candle</label><input type="checkbox" id="sdRequireReaction" checked></div>
+    <small class="hint">ON (recommended): only enters if the retest candle actually closes back out of the zone in its favor. OFF: enters on the first touch, no confirmation required.</small>
+    <div class="row"><label>Max retests before zone expires</label><input type="number" id="sdMaxRetests" value="2" min="1" max="10"></div>
+    <small class="hint">A zone gets weaker each time price returns to it. After this many retests, the zone is considered exhausted and stops being tracked — even if this specific retest still counts as a valid entry.</small>
+    <div class="row"><label>Max bars zone stays active</label><input type="number" id="sdMaxBarsActive" value="80" min="5" max="500"></div>
+    <small class="hint">A zone that's never been retested after this many bars is considered stale and dropped. Given longer than an FVG's default, since a real supply/demand imbalance tends to stay relevant longer than a simple price gap.</small>
+    <div class="row"><label>Stop buffer beyond zone (× ATR)</label><input type="number" id="sdStopBufferAtrMult" value="0.2" min="0" step="0.05"></div>
+    <small class="hint">The stop-loss sits just beyond the far edge of the zone, plus this small buffer — the zone's own boundary is what actually invalidates the setup.</small>
+  </fieldset>
+
+  <fieldset data-oc-strategies="onecandle">
+    <legend>One Candlestick (Zone Scalping) settings</legend>
+    <small class="hint">Only used when Strategy above is set to "One Candlestick (Zone Scalping)". Tracks the CURRENT clock hour's own developing range and direction minute by minute, in real time — a trade only ever fires once that hour has grown into a genuinely strong, full-size push. Two independent ways a trade can fire: (1) Zone entries — price reaches a proven support/resistance level (tested 2+ times historically) and rejects. (2) Stretch entries — price makes a fresh, still-extending new high/low for the hour, with no reject wick shown yet, anywhere, with no zone required at all — and can fire again, adding on, each time the push extends further, up to "Entries per trigger." Both feed into the same Auto Trailing exit already in the main panel (tune Trail After Profit / Profit Lock Distance small for this strategy's quick style). Once a rejection sequence closes, if the hour's own direction is still intact, the bot can optionally flip to ride that instead — see "Enable continuation flip" and "Max flips per hour" below to control (or turn off) that behavior. Does not use a real stop-loss — see the safety backstop below.</small>
+    <div class="row"><label>Entries per trigger</label><input type="number" id="ocTradeCount" value="3" min="1" max="10"></div>
+    <small class="hint">For a zone entry: how many trades fire together, all at once. For a stretch entry: the total cap on how many times the bot can add on as the same push keeps extending.</small>
+    <div class="row"><label>Full candle size (× H1 ATR)</label><input type="number" id="ocFullCandleAtrMult" value="0.6" min="0.1" step="0.05"></div>
+    <small class="hint">How big the CURRENT hour's own developing range has to be, relative to H1's typical range, before this strategy considers it a genuine, tradeable push at all — applies to both zone and stretch entries. A quiet, small hour never qualifies.</small>
+    <div class="row"><label>Enable zone entries</label><input type="checkbox" id="ocEnableZoneEntries" checked></div>
+    <div class="row"><label>Min touches for a proven zone</label><input type="number" id="ocMinTouches" value="2" min="2" max="10"></div>
+    <small class="hint">A swing high/low only becomes a tradeable zone once price has genuinely reacted there this many times — a single touch isn't enough to call it proven.</small>
+    <div class="row"><label>Zone tolerance (× ATR)</label><input type="number" id="ocZoneToleranceAtrMult" value="0.15" min="0.02" step="0.01"></div>
+    <small class="hint">How close price has to get to a zone's level to count as "at" it — computed from the ATR of whichever timeframe (H1 or H4) found that zone.</small>
+    <div class="row"><label>Zone expires after (hours)</label><input type="number" id="ocZoneExpireHours" value="48" min="1" max="500"></div>
+    <div class="row"><label>Enable stretch entries</label><input type="checkbox" id="ocEnableStretchEntries" checked></div>
+    <div class="row"><label>Stretch size (× H1 ATR)</label><input type="number" id="ocStretchAtrMult" value="0.15" min="0.02" step="0.01"></div>
+    <small class="hint">How much further beyond the hour's PREVIOUS extreme a candle has to reach to count as a genuine fresh stretch — this is what triggers a stretch entry, anywhere, with no zone needed.</small>
+    <div class="row"><label>Max wick shown (fraction)</label><input type="number" id="ocStretchWickFraction" value="0.3" min="0.05" max="0.9" step="0.05"></div>
+    <small class="hint">How much of the candle's own range is allowed to already be a reject wick before it's considered "already showing the wick" — lower means it has to be an even rawer, still-pushing candle to qualify. 0.3 means the close still has to be within the outer 30% of the candle's own range on the push side.</small>
+    <div class="row"><label>Max loss per batch ($)</label><input type="number" id="ocMaxLossPerBatch" value="75" min="0" step="5"></div>
+    <small class="hint">⚠️ Not a real stop-loss on the chart — a silent background watcher. If a batch's combined floating loss ever reaches this amount (set well beyond your normal quick target range), the bot force-closes every trade in that batch immediately. Normal trades never come close to touching this; it only ever matters on the rare one that runs against you.</small>
+    <div class="row"><label>Lot size per trade</label><input type="number" id="ocLots" value="0.02" min="0.01" step="0.01"></div>
+    <small class="hint">This strategy always uses a fixed lot size per trade, regardless of Sizing mode above — since there's no real per-trade stop-loss, Risk % has nothing honest to size against here. The Max loss per batch backstop above is the real risk control for this strategy, not lot size.</small>
+    <div class="row"><label>Enable continuation flip</label><input type="checkbox" id="ocEnableContinuationFlip" checked></div>
+    <small class="hint">After a rejection scalp closes in profit, the bot can automatically flip into a trade WITH the hour's own underlying push. Turn this OFF if you'd rather it just bank the win and sit flat until the next fresh signal, instead of always chasing a follow-on trade.</small>
+    <div class="row"><label>Max flips per hour</label><input type="number" id="ocMaxFlipsPerHour" value="1" min="0" max="10"></div>
+    <small class="hint">Caps how many times the flip above can fire within the same clock hour (0 = unlimited, only relevant if Enable continuation flip is on). Keeps one good rejection-then-flip cycle from turning into repeated flip-after-flip trades if the market keeps chopping.</small>
+  </fieldset>
+
+  <input type="hidden" id="addOnRiskPct" value="0.5">
+  <input type="hidden" id="retestRiskPct" value="0.5">
+  <input type="hidden" id="levelRetestRiskPct" value="0.5">
+
+  <fieldset data-oc-strategies="trend2020">
+    <legend>20/200 Trend settings</legend>
+    <small class="hint">Only used when Strategy above is set to "20/200 Trend". The 200 EMA is a pure trend filter — which side of it price is on decides uptrend vs downtrend, it never has to be touched. The 20 EMA is the entry line: price has to have already broken through it, then pull back and hold on a retest, before a trade fires.</small>
+    <div class="row"><label>Fast EMA (retest line)</label><input type="number" id="t2020FastEma" value="20" min="2" max="100"></div>
+    <div class="row"><label>Trend EMA (regime filter)</label><input type="number" id="t2020TrendEma" value="200" min="50" max="400"></div>
+    <div class="row"><label>Retest tolerance (%)</label><input type="number" id="t2020RetestTolerancePct" value="0.3" min="0.05" step="0.05"></div>
+    <small class="hint">How close price has to get to the 20 EMA to count as a genuine retest of it.</small>
+  </fieldset>
+
+  <fieldset data-oc-strategies="original,fvg,sd,breakretest,trend2020">
+    <legend>Add-on & retest behavior</legend>
+    <small class="hint">These control whether the bot adds to a winning position or takes a lighter retest entry, and how many bars it waits between entries.</small>
+    <div class="row"><label>Enable add-ons</label><input type="checkbox" id="enableAddOns" checked></div>
+    <div class="row"><label>Max add-ons/direction</label><input type="number" id="maxAddOns" value="4" min="0" max="10"></div>
+    <small class="hint">Untick "Enable add-ons" to stop the bot from adding to a position entirely — setting Max add-ons to 0 does the same thing, either works.</small>
+    <div class="row"><label>Enable retest entries</label><input type="checkbox" id="enableRetest" checked></div>
+    <div class="row"><label>Cooldown (bars)</label><input type="number" id="cooldownBars" value="1" min="0" max="50"></div>
+  </fieldset>
+
+  <fieldset data-oc-strategies="original,fvg,sd,breakretest,trend2020">
+    <legend>Position sizing (lots)</legend>
+    <small class="hint">Sets how big each trade is, in lots. The Account Size preset above already fills these in with sensible starting points — adjust freely from there.</small>
+    <div class="row"><label>Base size (lots)</label><input type="number" id="baseLots" value="0.10" min="0.01" step="0.01"></div>
+    <div class="row"><label>Add-on size (lots)</label><input type="number" id="addOnLots" value="0.05" min="0.01" step="0.01"></div>
+    <div class="row"><label>Retest size (lots)</label><input type="number" id="retestLots" value="0.05" min="0.01" step="0.01"></div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Trade frequency</legend>
+    <small class="hint">"Require pivot-side agreement" is a filter that reduces trade frequency (off by default, matching the raw indicator). "Max entries per day" caps how many trades it takes before pausing, even if more signals appear.</small>
+    <div class="row"><label>Require pivot-side agreement</label><input type="checkbox" id="requirePivotSide"></div>
+    <div class="row"><label>Max entries per day (0=unlimited)</label><input type="number" id="maxEntriesPerDay" value="0" min="0" max="100"></div>
+  </fieldset>
+
+  <fieldset>
+    <legend>News blackout</legend>
+    <small class="hint">List known high-impact event times (24hr, your browser's local time), one per line — e.g. NFP/CPI at 08:30, FOMC at 14:00. When ON, the bot pauses NEW entries within the window around each time, every day it recurs, but keeps managing/trailing any trade already open.</small>
+    <div class="row"><label>Enable news blackout</label>
+      <select id="newsBlackoutOn">
+        <option value="off" selected>OFF</option>
+        <option value="on">ON</option>
+      </select>
+    </div>
+    <div class="row"><label>Event times (HH:MM)</label></div>
+    <div class="row"><textarea id="newsBlackoutTimes" rows="3" style="flex:1 1 100%; min-width:70px; background:#0c1224; color:#eaf2ff; border:1px solid rgba(111,227,255,0.25); border-radius:8px; padding:9px 10px; font-size:13px;" placeholder="08:30&#10;14:00"></textarea></div>
+    <div class="row"><label>Blackout window (± minutes)</label><input type="number" id="newsBlackoutMinutes" value="15" min="1" max="120"></div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Trading Session Window</legend>
+    <small class="hint">Only let the bot open NEW trades during a specific window each day (e.g. London session only) — pick your own timezone below, times show as regular AM/PM, no military time. When OFF, the bot trades any time, same as always. When ON and outside the window, the bot simply won't open new trades — it still manages, trails, and protects anything already open, unless you turn on "Flatten at window end" below.</small>
+    <div class="row"><label>Enable session window</label>
+      <select id="sessionWindowOn">
+        <option value="off" selected>OFF</option>
+        <option value="on">ON</option>
+      </select>
+    </div>
+    <div class="row"><label>Start trading at</label><input type="time" id="sessionStartTime" value="08:00"></div>
+    <div class="row"><label>Stop trading at</label><input type="time" id="sessionEndTime" value="11:00"></div>
+    <div class="row"><label>Your timezone</label>
+      <select id="sessionTimezone">
+        <option value="America/New_York">Eastern Time</option>
+        <option value="America/Chicago" selected>Central Time</option>
+        <option value="America/Denver">Mountain Time</option>
+        <option value="America/Los_Angeles">Pacific Time</option>
+      </select>
+    </div>
+    <div class="row"><label>Flatten open trades at window end</label><input type="checkbox" id="sessionFlattenAtEnd"></div>
+    <small class="hint">Leave "Flatten at window end" OFF (recommended) to let take-profit, trailing, and the daily circuit breaker keep managing open trades after the window closes — the window only controls when NEW trades can start. Turn it ON if you specifically want everything force-closed the moment the window ends, win or lose.</small>
+  </fieldset>
+
+  <fieldset data-oc-strategies="original,fvg,sd,breakretest,trend2020">
+    <legend>Structural levels (Smart Pivot Points logic)</legend>
+    <small class="hint">Instead of a random target price, this aims each trade at a real support/resistance level (R1, S1, Fib lines) — price has an actual reason to react there. Used for take-profit targets (when "Use levels for TP" is on) and for level-retest entries, across every strategy that uses structural levels.</small>
+    <div class="row"><label>Use levels for TP</label><input type="checkbox" id="useLevelTP" checked></div>
+    <div class="row"><label>Enable level-retest entries</label><input type="checkbox" id="enableLevelRetest" checked></div>
+    <div class="row"><label>Level-retest size (lots)</label><input type="number" id="levelRetestLots" value="0.05" min="0.01" step="0.01"></div>
+    <div class="row"><label>Require room before entry</label><input type="checkbox" id="minRoomFilterOn" checked></div>
+    <small class="hint">A strong momentum candle often fires right as price arrives at a recent high/low — that's how those levels became significant in the first place. This skips entries with too little room left before hitting the nearest level, which is usually a stall/rejection risk and leaves almost no distance to the take-profit target (that near-zero room is what can make an ordinary wiggle feel like an instant drawdown). Applies to every entry type, across every strategy that uses structural levels.</small>
+    <div class="row"><label>Minimum room (× ATR)</label><input type="number" id="minRoomAtrMult" value="1.0" min="0.1" step="0.1"></div>
+  </fieldset>
+
+  <fieldset data-oc-strategies="original,fvg,sd,breakretest,trend2020">
+    <legend>Risk (initial stop-loss/take-profit — auto-scales via ATR across forex, NAS100, US30, gold, etc.)</legend>
+    <small class="hint">ATR just means "how big this market's normal price wiggles are right now." These set the INITIAL stop-loss/take-profit at trade open for the Original strategy (FVG uses its own gap-based stop above, but still uses this take-profit cap). Trailing/breakeven behavior is controlled by the dollar-based Auto Trailing settings above, not these.</small>
+    <div class="row"><label>Stop-loss (× ATR)</label><input type="number" id="slAtrMult" value="2.0" min="0.2" step="0.1"></div>
+    <small class="hint">How far the safety-net stop sits from your entry. Higher = more room for normal noise, but a bigger loss if it's wrong.</small>
+    <div class="row"><label>Take-profit cap (× ATR, 0=off)</label><input type="number" id="tpAtrMult" value="4" min="0" step="0.5"></div>
+  </fieldset>
+
+  <fieldset data-oc-strategies="original,breakretest">
+    <legend>Volatility-Adjusted Risk (auto per-instrument)</legend>
+    <small class="hint">OFF by default. When set to a sensitivity level, this automatically widens or tightens BOTH the Stop-loss and Take-profit cap above, together, based on how volatile the currently-loaded instrument actually is — a genuinely volatile pair like GBP/JPY gets more room, a calm one gets less, recalculated fresh every time you press Start. No pair list to maintain, and because both numbers always move together, your reward-to-risk ratio never quietly breaks the way it would if you widened just the stop by hand.</small>
+    <div class="row"><label>Sensitivity</label>
+      <select id="volSensitivity">
+        <option value="off" selected>Off</option>
+        <option value="low">Low</option>
+        <option value="medium">Medium (recommended for volatile pairs)</option>
+        <option value="high">High</option>
+      </select>
+    </div>
+    <small class="hint">Low = small adjustment. Medium = a solid default for a genuinely volatile pair like GBP/JPY. High = the strongest adjustment, for the most volatile instruments you trade.</small>
+    <div class="row"><label>Customize the numbers behind this</label><input type="checkbox" id="volCustomToggle"></div>
+    <div id="volCustomFields" style="display:none;">
+      <small class="hint">Only for anyone who wants to fine-tune exactly how this works. Everyone else — the Sensitivity dropdown above already handles this for you, nothing below needs to be touched.</small>
+      <div class="row"><label>Calm threshold (ATR % of price)</label><input type="number" id="volCalmThreshold" value="0.05" min="0.01" step="0.01"></div>
+      <div class="row"><label>Aggressive threshold (ATR % of price)</label><input type="number" id="volAggressiveThreshold" value="0.15" min="0.01" step="0.01"></div>
+      <small class="hint">These measure ATR as a percentage of the current price — a scale-independent way to compare a $2,000 gold instrument to a 190-yen forex cross fairly. At or below the calm threshold, the "calm factor" applies; at or above the aggressive threshold, the "aggressive factor" applies; in between, it blends smoothly.</small>
+      <div class="row"><label>Calm pair factor</label><input type="number" id="volCalmFactor" value="1.0" min="0.3" step="0.05"></div>
+      <div class="row"><label>Aggressive pair factor</label><input type="number" id="volAggressiveFactor" value="1.0" min="1.0" step="0.05"></div>
+      <small class="hint">Values shown reflect the Sensitivity preset above until you edit them — pick a preset first, then fine-tune here if you want to go further.</small>
+      <small class="hint">The calm factor slightly tightens both multiples on quiet instruments; the aggressive factor widens both on genuinely volatile ones. 1.0 = no change from your base Stop-loss/Take-profit values above.</small>
+    </div>
+  </fieldset>
+
+  </div><!-- /advancedSection -->
+
+  <div class="row"><label>Manual test size (lots)</label><input type="number" id="testLots" value="0.01" min="0.01" step="0.01"></div>
+
+  <div class="btnrow">
+    <button id="startBtn" class="pill-btn">▶ Start Bot</button>
+    <button id="stopBtn" class="pill-btn" disabled>■ Stop Bot</button>
+    <button id="testBuyBtn" class="pill-btn">Test Trade — BUY</button>
+    <button id="testSellBtn" class="pill-btn">Test Trade — SELL</button>
+    <button id="clearLogBtn">Clear log</button>
+  </div>
+
+  <div id="log"></div>
+
+</div>
+
+<script>
+var Framework = new FXB.Framework();
+var SETTINGS_ID = "qt-sniper-auto-bot-v1";
+
+// ---- Runtime state -------------------------------------------------
+var isRunning = false;
+var tradingStore = null;
+var pivotStore = null;
+var htfStore = null; // higher-timeframe candle store for the trend-agreement filter (Original strategy only)
+var ocStoreM1 = null, ocStoreH1 = null, ocStoreH4 = null; // One Candlestick's own dedicated stores
+var ocZones = [];
+var OC_ZONE_CAP = 60;
+var ocBatchGroups = {}; // batchId -> array of orderIds, for the combined max-loss-per-batch backstop
+var ocNextBatchId = 1;
+var cfg = null;                 // snapshot of settings taken at Start
+var barsSinceLastEntry = { buy: 999, sell: 999, retestBuy: 999, retestSell: 999, levelRetestBuy: 999, levelRetestSell: 999 };
+var addOnsUsed = { buy: 0, sell: 0 };
+var pendingOrder = false;       // guards against overlapping SendOrder calls
+var entriesToday = 0;
+var entriesDayKey = "";
+
+// Real order objects report the platform's canonical instrument ID (e.g. "GBP/JPY"), which can
+// differ from the raw text typed into the Instrument field (e.g. "GBPJPY"). Checking both here
+// is what makes order matching work regardless of which form the account actually uses.
+function isBotInstrument(orderInstrumentId) {
+  if (!cfg || !orderInstrumentId) return false;
+  return orderInstrumentId === cfg.instrumentId || orderInstrumentId === cfg.canonicalInstrumentId;
+}
+
+function currentDayKey() {
+  var d = new Date();
+  return d.getFullYear() + "-" + d.getMonth() + "-" + d.getDate();
+}
+function dailyCapOk() {
+  var dk = currentDayKey();
+  if (dk !== entriesDayKey) { entriesDayKey = dk; entriesToday = 0; }
+  return cfg.maxEntriesPerDay === 0 || entriesToday < cfg.maxEntriesPerDay;
+}
+
+// Returns the matched "HH:MM" string if the current time falls within a news blackout window,
+// or false otherwise. Recurs daily by clock time (no date needed) — list a known release time
+// like 08:30 once, and it applies every day it recurs, not just today.
+function isInNewsBlackout() {
+  if (!cfg.newsBlackoutOn) return false;
+  if (!cfg.newsBlackoutTimes) return false;
+  var lines = cfg.newsBlackoutTimes.split(/[\n,]+/).map(function (s) { return s.trim(); }).filter(Boolean);
+  if (lines.length === 0) return false;
+
+  var now = new Date();
+  var nowMinutes = now.getHours() * 60 + now.getMinutes();
+  var windowMin = cfg.newsBlackoutMinutes || 15;
+
+  for (var i = 0; i < lines.length; i++) {
+    var m = lines[i].match(/^(\d{1,2}):(\d{2})$/);
+    if (!m) continue;
+    var eventMinutes = parseInt(m[1], 10) * 60 + parseInt(m[2], 10);
+    var diff = Math.abs(nowMinutes - eventMinutes);
+    diff = Math.min(diff, 1440 - diff); // handle wrap around midnight
+    if (diff <= windowMin) return lines[i];
+  }
+  return false;
+}
+
+// ---- Trading Session Window — lets a student restrict NEW entries to a chosen window each
+// day (e.g. "only trade London, 3am-6am Central"), in whichever US timezone they actually live
+// in, displayed as normal 12-hour AM/PM time. Uses Intl.DateTimeFormat with an explicit IANA
+// timezone (not a fixed UTC offset) so this stays correct through Daylight Saving changes
+// automatically — a hardcoded offset would silently drift twice a year.
+var SESSION_TZ_LABELS = {
+  "America/New_York": "Eastern",
+  "America/Chicago": "Central",
+  "America/Denver": "Mountain",
+  "America/Los_Angeles": "Pacific"
+};
+
+// Returns { hours, minutes } for the current moment in the given IANA timezone, regardless of
+// what timezone this computer/browser itself is set to.
+function getTimeInZone(tz) {
+  var parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: tz, hour12: false, hour: "2-digit", minute: "2-digit"
+  }).formatToParts(new Date());
+  var hours = 0, minutes = 0;
+  parts.forEach(function (p) {
+    if (p.type === "hour") hours = parseInt(p.value, 10) % 24; // "24" from some ICU builds means midnight
+    if (p.type === "minute") minutes = parseInt(p.value, 10);
+  });
+  return { hours: hours, minutes: minutes };
+}
+
+// True whenever new entries are currently allowed. Returns true (no restriction) whenever the
+// feature is off, or the two times are equal (an empty/zero-width window would otherwise block
+// trading all day, which is never what's intended). Handles an overnight window that crosses
+// midnight (e.g. 10pm-6am) the same way isInNewsBlackout() handles wraparound.
+function isInsideSessionWindow() {
+  if (!cfg.sessionWindowOn) return true;
+  if (!cfg.sessionStartTime || !cfg.sessionEndTime) return true;
+
+  var startM = cfg.sessionStartTime.match(/^(\d{1,2}):(\d{2})$/);
+  var endM = cfg.sessionEndTime.match(/^(\d{1,2}):(\d{2})$/);
+  if (!startM || !endM) return true;
+
+  var startMinutes = parseInt(startM[1], 10) * 60 + parseInt(startM[2], 10);
+  var endMinutes = parseInt(endM[1], 10) * 60 + parseInt(endM[2], 10);
+  if (startMinutes === endMinutes) return true;
+
+  var now = getTimeInZone(cfg.sessionTimezone || "America/Chicago");
+  var nowMinutes = now.hours * 60 + now.minutes;
+
+  if (startMinutes < endMinutes) {
+    return nowMinutes >= startMinutes && nowMinutes < endMinutes;
+  }
+  // Window wraps past midnight (e.g. start 22:00, end 06:00).
+  return nowMinutes >= startMinutes || nowMinutes < endMinutes;
+}
+
+// Tracks whether the last check found us inside the window, so this only logs (and only queues
+// flatten-closes) on the actual open/close transition, not on every single tick.
+var sessionWindowWasInside = null;
+
+function checkSessionWindowTransition() {
+  if (!isRunning || !cfg || !cfg.sessionWindowOn) { sessionWindowWasInside = null; return; }
+
+  var inside = isInsideSessionWindow();
+  var tzLabel = SESSION_TZ_LABELS[cfg.sessionTimezone] || cfg.sessionTimezone;
+
+  if (sessionWindowWasInside === null) {
+    // First check after Start (or after the feature was just turned on) — just record state,
+    // no transition to announce yet.
+    sessionWindowWasInside = inside;
+    log("Trading session window is " + (inside ? "OPEN" : "CLOSED") + " right now (" +
+        cfg.sessionStartTime + "–" + cfg.sessionEndTime + " " + tzLabel + ").", "log-info");
+    return;
+  }
+
+  if (inside && !sessionWindowWasInside) {
+    sessionWindowWasInside = true;
+    log("🟢 Trading session window opened (" + cfg.sessionStartTime + "–" + cfg.sessionEndTime +
+        " " + tzLabel + ") — new trades allowed again.", "log-info");
+  } else if (!inside && sessionWindowWasInside) {
+    sessionWindowWasInside = false;
+    log("⏸ Trading session window closed (" + cfg.sessionStartTime + "–" + cfg.sessionEndTime +
+        " " + tzLabel + ") — no new trades until it reopens. Already-open trades keep being managed" +
+        (cfg.sessionFlattenAtEnd ? " and will now be flattened." : " normally."), "log-info");
+    if (cfg.sessionFlattenAtEnd) {
+      var ids = Object.keys(managedOrders);
+      if (ids.length > 0) {
+        ids.forEach(function (orderId) { forceCloseQueue[orderId] = { attempts: 0 }; });
+        attemptForceCloses();
+      }
+    }
+  }
+}
+
+// ---- Daily circuit breaker — for unattended running ----------------
+// Checked both on every closed bar AND on every real-time account balance/equity update
+// (whichever comes first), so a limit doesn't sit breached for up to a whole bar period
+// before the bot notices — the whole point of this is reacting promptly while nobody's
+// watching the screen.
+var dailyBreakerDayKey = "";
+var circuitBreakerTripped = false;
+
+// ---- Force-close queue — used by the circuit breaker so a failed close attempt is retried
+// until it genuinely succeeds, instead of being logged once and abandoned. This matters most
+// for exactly the "I'm not at my computer" scenario the circuit breaker exists for.
+//
+// IMPORTANT: this is retried both on bar close AND on every real-time account update, and the
+// latter can fire many times per second. Without the backoff below, a persistently-rejected
+// close (e.g. broker says "not enough working quantity") would retry on nearly every single
+// tick — flooding SendOrder, and if "Confirm every order" is on, popping a confirmation dialog
+// dozens of times a second. The cooldown below is what stops that.
+var forceCloseQueue = {}; // orderId -> { attempts, nextRetryAt }
+var FORCE_CLOSE_MIN_INTERVAL_MS = 4000; // never retry the same order more than once per ~4s
+
+// Global throttle shared across EVERY background management SendOrder call — force-closes,
+// breakeven, trailing, missing-SL/TP fill-in — regardless of which order it's for. Per-order
+// backoff alone isn't enough: if several orders are all failing at once (e.g. a broker-side
+// outage), each one's own 4s cooldown still lets multiple DIFFERENT orders retry in the same
+// moment, and if the platform's own trading permission is set to "Confirm" rather than "Allow",
+// every one of those pops its own dialog — that's what actually produces a burst of 20-30
+// popups landing close together. This makes sure background attempts are spaced out one at a
+// time, account-wide, so they can't cluster into that burst even when multiple orders are stuck.
+var lastGlobalMgmtAttemptAt = 0;
+var GLOBAL_MGMT_MIN_INTERVAL_MS = 2000;
+function globalMgmtThrottleOk() {
+  var now = Date.now();
+  if (now - lastGlobalMgmtAttemptAt < GLOBAL_MGMT_MIN_INTERVAL_MS) return false;
+  lastGlobalMgmtAttemptAt = now;
+  return true;
+}
+
+function attemptForceCloses() {
+  var now = Date.now();
+  var ids = Object.keys(forceCloseQueue);
+  ids.forEach(function (orderId) {
+    var entry = forceCloseQueue[orderId];
+    if (entry.nextRetryAt && now < entry.nextRetryAt) return; // still cooling down from the last attempt
+    if (!globalMgmtThrottleOk()) return; // another order's attempt just went out — wait for the shared window
+
+    var order = Framework.Orders.get(orderId);
+    if (!order || order.closeTime) {
+      // Already closed (by this attempt succeeding earlier, hitting its own SL/TP, or manually) — done.
+      delete forceCloseQueue[orderId];
+      return;
+    }
+
+    entry.attempts++;
+    entry.nextRetryAt = now + Math.min(FORCE_CLOSE_MIN_INTERVAL_MS * entry.attempts, 30000); // back off further each failure, capped at 30s
+
+    Framework.SendOrder({
+      instrumentId: order.instrumentId,
+      orderId: orderId,
+      tradingAction: FXB.OrderTypes.CLOSEPOSITION
+    }, function (MsgResult) {
+      if (MsgResult && MsgResult.result && MsgResult.result.isOkay) {
+        log("Closed order " + orderId + " (circuit breaker)", "log-info");
+        delete forceCloseQueue[orderId];
+      } else {
+        var errText = "unknown error";
+        try { errText = Framework.Translation.TranslateError(MsgResult.result); } catch (e) {}
+        var urgency = entry.attempts >= 3 ? "🔴 STILL OPEN after " + entry.attempts + " attempts" : "retrying";
+        log("Could not close order " + orderId + " (" + urgency + "): " + errText, "log-warn");
+        if (entry.attempts === 3) beep("sell"); // extra alert if it's genuinely stuck, not just a one-off blip
+      }
+    }, { confirm: false });
+  });
+}
+
+
+// Computes THIS bot instance's own profit/loss for today — today's closed trades (from
+// tradeLog) plus whatever's currently floating on trades it still has open. Deliberately does
+// NOT use whole-account equity: if you run multiple pairs in separate windows, each one's daily
+// circuit breaker needs to react to what THAT pair's trades did, not to profit or loss coming
+// from a completely different instance or a manual trade elsewhere on the same account.
+function computeBotDailyPL() {
+  var todayKey = currentDayKey();
+  var pl = 0;
+  tradeLog.forEach(function (t) {
+    if (t.dayKey === todayKey && typeof t.profit === "number") pl += t.profit;
+  });
+  Object.keys(managedOrders).forEach(function (orderId) {
+    var order = Framework.Orders.get(orderId);
+    if (order && !order.closeTime && typeof order.profit === "number") pl += order.profit;
+  });
+  return pl;
+}
+
+function checkDailyCircuitBreaker() {
+  if (!isRunning || circuitBreakerTripped) return;
+  if (!cfg || (cfg.dailyProfitTarget <= 0 && cfg.dailyMaxLoss <= 0)) return;
+
+  var dk = currentDayKey();
+  if (dk !== dailyBreakerDayKey) {
+    // New day — re-arm automatically.
+    dailyBreakerDayKey = dk;
+    circuitBreakerTripped = false;
+  }
+
+  var dailyPL = computeBotDailyPL();
+
+  if (cfg.dailyProfitTarget > 0 && dailyPL >= cfg.dailyProfitTarget) {
+    tripCircuitBreaker("this instrument's trades reached the profit target (+$" + dailyPL.toFixed(2) + ")");
+  } else if (cfg.dailyMaxLoss > 0 && dailyPL <= -cfg.dailyMaxLoss) {
+    tripCircuitBreaker("this instrument's trades reached the max daily loss (-$" + Math.abs(dailyPL).toFixed(2) + ")");
+  }
+}
+
+function tripCircuitBreaker(reasonText) {
+  circuitBreakerTripped = true;
+  isRunning = false;
+  setInputsDisabled(false);
+  setStatus(false, "Bot Stopped — " + reasonText);
+  log("🛑 Daily circuit breaker: " + reasonText + ". No new trades will be taken today.", "log-warn");
+  beep("sell"); beep("sell"); // distinct double-tone so it's noticeable even from another room
+
+  if (cfg.closeOnCircuitBreak) {
+    var ids = Object.keys(managedOrders);
+    if (ids.length === 0) {
+      log("No open bot trades to close.", "log-info");
+    } else {
+      ids.forEach(function (orderId) {
+        forceCloseQueue[orderId] = { attempts: 0 };
+      });
+      attemptForceCloses();
+    }
+  }
+}
+
+// ---- Audible alert whenever a trade actually confirms ----------------
+function beep(direction) {
+  try {
+    var ctx = new (window.AudioContext || window.webkitAudioContext)();
+    var now = ctx.currentTime;
+    var tone = function (f, s, d) {
+      var o = ctx.createOscillator(), g = ctx.createGain();
+      o.connect(g); g.connect(ctx.destination);
+      o.type = "sine"; o.frequency.value = f;
+      g.gain.setValueAtTime(0.3, now + s);
+      g.gain.exponentialRampToValueAtTime(0.001, now + s + d);
+      o.start(now + s); o.stop(now + s + d + 0.01);
+    };
+    if (direction === "buy")  { tone(528, 0, 0.15); tone(660, 0.14, 0.20); }
+    if (direction === "sell") { tone(660, 0, 0.15); tone(528, 0.14, 0.20); }
+  } catch (e) {}
+}
+
+// ---- Logging ---------------------------------------------------------
+// Keeps the last 60 log lines so they can be persisted alongside your settings (see
+// persistLogHistory below) and survive a page reload — deliberately capped small so this can
+// never grow large enough to risk the settings save itself failing.
+var logHistoryBuffer = [];
+var LOG_HISTORY_MAX = 60;
+
+function log(msg, cls) {
+  var el = document.getElementById("log");
+  var line = document.createElement("div");
+  if (cls) line.className = cls;
+  var t = new Date();
+  var ts = ("0" + t.getHours()).slice(-2) + ":" + ("0" + t.getMinutes()).slice(-2) + ":" + ("0" + t.getSeconds()).slice(-2);
+  line.textContent = "[" + ts + "] " + msg;
+  el.appendChild(line);
+  el.scrollTop = el.scrollHeight;
+
+  logHistoryBuffer.push({ ts: ts, msg: msg, cls: cls || "" });
+  if (logHistoryBuffer.length > LOG_HISTORY_MAX) logHistoryBuffer.shift();
+}
+
+// ---- UI helpers --------------------------------------------------
+function setInputsDisabled(disabled) {
+  var ids = ["instrumentId","strategySelect","modeSelect","accountSizeSelect","timeframe","pivotTf","fastLen","midLen","slowLen","atrMult","requireHtfAgreement",
+    "fvgMinGapAtrMult","fvgRequireReaction","fvgMaxBarsActive","fvgStopBufferAtrMult",
+    "sdMaxBaseCandles","sdBaseMaxRangeAtrMult","sdBreakoutMinAtrMult","sdRequireReaction","sdMaxRetests","sdMaxBarsActive","sdStopBufferAtrMult",
+    "ocTradeCount","ocMinTouches","ocZoneToleranceAtrMult","ocZoneExpireHours","ocFullCandleAtrMult","ocMaxLossPerBatch","ocLots","ocEnableZoneEntries","ocEnableStretchEntries","ocStretchAtrMult","ocStretchWickFraction","ocEnableContinuationFlip","ocMaxFlipsPerHour",
+    "t2020FastEma","t2020TrendEma","t2020RetestTolerancePct",
+    "baseLots","enableAddOns","addOnLots","maxAddOns","enableRetest","retestLots",
+    "cooldownBars","requirePivotSide","maxEntriesPerDay","newsBlackoutOn","newsBlackoutTimes","newsBlackoutMinutes","dailyProfitTarget","dailyMaxLoss","closeOnCircuitBreak","autoTradingOn",
+    "sessionWindowOn","sessionStartTime","sessionEndTime","sessionTimezone","sessionFlattenAtEnd",
+    "useLevelTP","enableLevelRetest","levelRetestLots","minRoomFilterOn","minRoomAtrMult",
+    "sizingMode","baseRiskPct","addOnRiskPct","retestRiskPct","levelRetestRiskPct","hardMaxLot",
+    "addStopLoss","addTakeProfit","autoTrailingOn","trailAfterProfitDollars","profitLockDistanceDollars","breakevenBufferDollars",
+    "slAtrMult","tpAtrMult","volSensitivity","volCustomToggle","volCalmThreshold","volAggressiveThreshold","volCalmFactor","volAggressiveFactor"];
+  ids.forEach(function(id) { document.getElementById(id).disabled = disabled; });
+}
+
+function setStatus(running, stoppedLabel) {
+  var el = document.getElementById("status");
+  var autoLabel = (running && cfg && !cfg.autoTradingOn) ? " (Manual mode)" : "";
+  el.textContent = running ? "● Bot Running" + autoLabel + " — " + cfg.instrumentId : ("● " + (stoppedLabel || "Bot Stopped"));
+  el.className = running ? "running" : "stopped";
+  document.getElementById("startBtn").disabled = running;
+  document.getElementById("stopBtn").disabled = !running;
+}
+
+function readConfig() {
+  return {
+    instrumentId: document.getElementById("instrumentId").value.trim(),
+    strategy: document.getElementById("strategySelect").value,
+    mode: document.getElementById("modeSelect").value,
+    accountSize: document.getElementById("accountSizeSelect").value,
+    timeframe: parseInt(document.getElementById("timeframe").value),
+    pivotTf: parseInt(document.getElementById("pivotTf").value),
+    fastLen: parseInt(document.getElementById("fastLen").value) || 5,
+    midLen: parseInt(document.getElementById("midLen").value) || 13,
+    slowLen: parseInt(document.getElementById("slowLen").value) || 34,
+    atrMult: parseFloat(document.getElementById("atrMult").value) || 0.2,
+    requireHtfAgreement: document.getElementById("requireHtfAgreement").checked,
+    fvgMinGapAtrMult: parseFloat(document.getElementById("fvgMinGapAtrMult").value) || 0.3,
+    fvgRequireReaction: document.getElementById("fvgRequireReaction").checked,
+    fvgMaxBarsActive: parseInt(document.getElementById("fvgMaxBarsActive").value) || 50,
+    fvgStopBufferAtrMult: parseFloat(document.getElementById("fvgStopBufferAtrMult").value) || 0.2,
+    sdMaxBaseCandles: parseInt(document.getElementById("sdMaxBaseCandles").value) || 3,
+    sdBaseMaxRangeAtrMult: parseFloat(document.getElementById("sdBaseMaxRangeAtrMult").value) || 0.5,
+    sdBreakoutMinAtrMult: parseFloat(document.getElementById("sdBreakoutMinAtrMult").value) || 0.8,
+    sdRequireReaction: document.getElementById("sdRequireReaction").checked,
+    sdMaxRetests: parseInt(document.getElementById("sdMaxRetests").value) || 2,
+    sdMaxBarsActive: parseInt(document.getElementById("sdMaxBarsActive").value) || 80,
+    sdStopBufferAtrMult: parseFloat(document.getElementById("sdStopBufferAtrMult").value) || 0.2,
+    ocTradeCount: parseInt(document.getElementById("ocTradeCount").value) || 3,
+    ocMinTouches: parseInt(document.getElementById("ocMinTouches").value) || 2,
+    ocZoneToleranceAtrMult: parseFloat(document.getElementById("ocZoneToleranceAtrMult").value) || 0.15,
+    ocZoneExpireHours: parseFloat(document.getElementById("ocZoneExpireHours").value) || 48,
+    ocFullCandleAtrMult: parseFloat(document.getElementById("ocFullCandleAtrMult").value) || 0.6,
+    ocMaxLossPerBatch: parseFloat(document.getElementById("ocMaxLossPerBatch").value) || 0,
+    ocLots: parseFloat(document.getElementById("ocLots").value) || 0.02,
+    ocEnableZoneEntries: document.getElementById("ocEnableZoneEntries").checked,
+    ocEnableStretchEntries: document.getElementById("ocEnableStretchEntries").checked,
+    ocStretchAtrMult: parseFloat(document.getElementById("ocStretchAtrMult").value) || 0.15,
+    ocStretchWickFraction: parseFloat(document.getElementById("ocStretchWickFraction").value) || 0.3,
+    ocEnableContinuationFlip: document.getElementById("ocEnableContinuationFlip").checked,
+    ocMaxFlipsPerHour: isNaN(parseInt(document.getElementById("ocMaxFlipsPerHour").value)) ? 1 : parseInt(document.getElementById("ocMaxFlipsPerHour").value),
+    t2020FastEma: parseInt(document.getElementById("t2020FastEma").value) || 20,
+    t2020TrendEma: parseInt(document.getElementById("t2020TrendEma").value) || 200,
+    t2020RetestTolerancePct: parseFloat(document.getElementById("t2020RetestTolerancePct").value) || 0.3,
+    baseLots: parseFloat(document.getElementById("baseLots").value) || 0.10,
+    sizingMode: document.getElementById("sizingMode").value,
+    baseRiskPct: parseFloat(document.getElementById("baseRiskPct").value) || 1.0,
+    addOnRiskPct: parseFloat(document.getElementById("addOnRiskPct").value) || 0.5,
+    retestRiskPct: parseFloat(document.getElementById("retestRiskPct").value) || 0.5,
+    levelRetestRiskPct: parseFloat(document.getElementById("levelRetestRiskPct").value) || 0.5,
+    hardMaxLot: parseFloat(document.getElementById("hardMaxLot").value) || 2.0,
+    enableAddOns: document.getElementById("enableAddOns").checked,
+    addOnLots: parseFloat(document.getElementById("addOnLots").value) || 0.05,
+    maxAddOns: parseInt(document.getElementById("maxAddOns").value) || 0,
+    enableRetest: document.getElementById("enableRetest").checked,
+    retestLots: parseFloat(document.getElementById("retestLots").value) || 0.05,
+    cooldownBars: parseInt(document.getElementById("cooldownBars").value) || 0,
+    requirePivotSide: document.getElementById("requirePivotSide").checked,
+    newsBlackoutTimes: document.getElementById("newsBlackoutTimes").value,
+    newsBlackoutOn: document.getElementById("newsBlackoutOn").value === "on",
+    newsBlackoutMinutes: parseInt(document.getElementById("newsBlackoutMinutes").value) || 15,
+    maxEntriesPerDay: parseInt(document.getElementById("maxEntriesPerDay").value) || 0,
+    dailyProfitTarget: parseFloat(document.getElementById("dailyProfitTarget").value) || 0,
+    dailyMaxLoss: parseFloat(document.getElementById("dailyMaxLoss").value) || 0,
+    closeOnCircuitBreak: document.getElementById("closeOnCircuitBreak").checked,
+    autoTradingOn: document.getElementById("autoTradingOn").value === "on",
+    sessionWindowOn: document.getElementById("sessionWindowOn").value === "on",
+    sessionStartTime: document.getElementById("sessionStartTime").value,
+    sessionEndTime: document.getElementById("sessionEndTime").value,
+    sessionTimezone: document.getElementById("sessionTimezone").value,
+    sessionFlattenAtEnd: document.getElementById("sessionFlattenAtEnd").checked,
+    useLevelTP: document.getElementById("useLevelTP").checked,
+    enableLevelRetest: document.getElementById("enableLevelRetest").checked,
+    levelRetestLots: parseFloat(document.getElementById("levelRetestLots").value) || 0.05,
+    minRoomFilterOn: document.getElementById("minRoomFilterOn").checked,
+    minRoomAtrMult: parseFloat(document.getElementById("minRoomAtrMult").value) || 1.0,
+    slAtrMult: parseFloat(document.getElementById("slAtrMult").value) || 2.0,
+    tpAtrMult: parseFloat(document.getElementById("tpAtrMult").value) || 0,
+    volSensitivity: document.getElementById("volSensitivity").value,
+    volAdjustOn: document.getElementById("volSensitivity").value !== "off",
+    volCalmThreshold: parseFloat(document.getElementById("volCalmThreshold").value) || 0.05,
+    volAggressiveThreshold: parseFloat(document.getElementById("volAggressiveThreshold").value) || 0.15,
+    volCalmFactor: parseFloat(document.getElementById("volCalmFactor").value) || 0.9,
+    volAggressiveFactor: parseFloat(document.getElementById("volAggressiveFactor").value) || 1.6,
+    addStopLoss: document.getElementById("addStopLoss").value === "on",
+    addTakeProfit: document.getElementById("addTakeProfit").value === "on",
+    autoTrailingOn: document.getElementById("autoTrailingOn").value === "on",
+    trailAfterProfitDollars: parseFloat(document.getElementById("trailAfterProfitDollars").value) || 0,
+    profitLockDistanceDollars: parseFloat(document.getElementById("profitLockDistanceDollars").value) || 0,
+    breakevenBufferDollars: parseFloat(document.getElementById("breakevenBufferDollars").value) || 0
+  };
+}
+
+function applyConfigToUI(s) {
+  if (!s) return;
+  var map = ["instrumentId","timeframe","pivotTf","fastLen","midLen","slowLen","atrMult",
+    "fvgMinGapAtrMult","fvgMaxBarsActive","fvgStopBufferAtrMult",
+    "sdMaxBaseCandles","sdBaseMaxRangeAtrMult","sdBreakoutMinAtrMult","sdMaxRetests","sdMaxBarsActive","sdStopBufferAtrMult",
+    "ocTradeCount","ocMinTouches","ocZoneToleranceAtrMult","ocZoneExpireHours","ocFullCandleAtrMult","ocMaxLossPerBatch","ocLots","ocStretchAtrMult","ocStretchWickFraction","ocMaxFlipsPerHour",
+    "t2020FastEma","t2020TrendEma","t2020RetestTolerancePct",
+    "baseLots","addOnLots","maxAddOns","retestLots","cooldownBars","levelRetestLots","maxEntriesPerDay",
+    "newsBlackoutTimes","newsBlackoutMinutes","sessionStartTime","sessionEndTime",
+    "baseRiskPct","addOnRiskPct","retestRiskPct","levelRetestRiskPct","hardMaxLot","dailyProfitTarget","dailyMaxLoss",
+    "trailAfterProfitDollars","profitLockDistanceDollars","breakevenBufferDollars","slAtrMult","tpAtrMult","minRoomAtrMult",
+    "volCalmThreshold","volAggressiveThreshold","volCalmFactor","volAggressiveFactor"];
+  map.forEach(function(k) { if (s[k] !== undefined) document.getElementById(k).value = s[k]; });
+  if (s.strategy !== undefined && s.strategy) document.getElementById("strategySelect").value = s.strategy;
+  if (s.mode !== undefined) document.getElementById("modeSelect").value = s.mode;
+  if (s.accountSize !== undefined && s.accountSize) document.getElementById("accountSizeSelect").value = s.accountSize;
+  if (s.closeOnCircuitBreak !== undefined) document.getElementById("closeOnCircuitBreak").checked = s.closeOnCircuitBreak;
+  if (s.autoTradingOn !== undefined) document.getElementById("autoTradingOn").value = s.autoTradingOn ? "on" : "off";
+  if (s.newsBlackoutOn !== undefined) document.getElementById("newsBlackoutOn").value = s.newsBlackoutOn ? "on" : "off";
+  if (s.sessionWindowOn !== undefined) document.getElementById("sessionWindowOn").value = s.sessionWindowOn ? "on" : "off";
+  if (s.sessionTimezone !== undefined && s.sessionTimezone) document.getElementById("sessionTimezone").value = s.sessionTimezone;
+  if (s.sessionFlattenAtEnd !== undefined) document.getElementById("sessionFlattenAtEnd").checked = s.sessionFlattenAtEnd;
+  if (s.enableAddOns !== undefined) document.getElementById("enableAddOns").checked = s.enableAddOns;
+  if (s.enableRetest !== undefined) document.getElementById("enableRetest").checked = s.enableRetest;
+  if (s.requirePivotSide !== undefined) document.getElementById("requirePivotSide").checked = s.requirePivotSide;
+  if (s.useLevelTP !== undefined) document.getElementById("useLevelTP").checked = s.useLevelTP;
+  if (s.enableLevelRetest !== undefined) document.getElementById("enableLevelRetest").checked = s.enableLevelRetest;
+  if (s.minRoomFilterOn !== undefined) document.getElementById("minRoomFilterOn").checked = s.minRoomFilterOn;
+  if (s.fvgRequireReaction !== undefined) document.getElementById("fvgRequireReaction").checked = s.fvgRequireReaction;
+  if (s.ocEnableZoneEntries !== undefined) document.getElementById("ocEnableZoneEntries").checked = s.ocEnableZoneEntries;
+  if (s.ocEnableStretchEntries !== undefined) document.getElementById("ocEnableStretchEntries").checked = s.ocEnableStretchEntries;
+  if (s.ocEnableContinuationFlip !== undefined) document.getElementById("ocEnableContinuationFlip").checked = s.ocEnableContinuationFlip;
+  if (s.requireHtfAgreement !== undefined) document.getElementById("requireHtfAgreement").checked = s.requireHtfAgreement;
+  if (s.volSensitivity !== undefined) document.getElementById("volSensitivity").value = s.volSensitivity;
+  if (s.sdRequireReaction !== undefined) document.getElementById("sdRequireReaction").checked = s.sdRequireReaction;
+  if (s.addStopLoss !== undefined) document.getElementById("addStopLoss").value = s.addStopLoss ? "on" : "off";
+  if (s.addTakeProfit !== undefined) document.getElementById("addTakeProfit").value = s.addTakeProfit ? "on" : "off";
+  if (s.autoTrailingOn !== undefined) document.getElementById("autoTrailingOn").value = s.autoTrailingOn ? "on" : "off";
+}
+
+// ---- Risk-based position sizing ---------------------------------------
+// Converts "risk X% of equity" into an actual lot size, using the instrument's real
+// tickValue (cash value of a tickSize move per 1.0 lot, already in account currency) —
+// not an approximation. Falls back to the fixed-lot value on anything unexpected
+// (missing instrument data, zero ATR, etc.) so a data gap never blocks a trade or,
+// worse, sizes one wildly wrong.
+//
+// stopDistancePrice lets a caller (like the FVG strategy, whose stop is measured from the gap
+// boundary, not a flat ATR multiple from entry) supply the REAL stop distance being used for
+// this specific trade, so risk sizing reflects what will actually be risked — not a generic
+// approximation. Falls back to atrAtEntry × slAtrMult (the Original strategy's own math) when
+// not supplied, so nothing changes for existing callers.
+function computeLotSize(fixedLots, riskPct, atrAtEntry, stopDistancePrice) {
+  if (cfg.sizingMode !== "risk") return fixedLots;
+  if (!cfg.addStopLoss) {
+    log("Risk % sizing needs a stop-loss to size against — Add Stop-Loss is OFF, so using fixed lots (" + fixedLots + ") instead for this trade.", "log-warn");
+    return fixedLots;
+  }
+  var slDistancePrice = stopDistancePrice || (atrAtEntry ? atrAtEntry * cfg.slAtrMult : 0);
+  if (!slDistancePrice || slDistancePrice <= 0) return fixedLots;
+
+  var instr = Framework.Instruments.get(cfg.instrumentId);
+  if (!instr || !instr.tickSize || !instr.tickValue) return fixedLots;
+
+  var slDistanceTicks = slDistancePrice / instr.tickSize;
+  var lossPerLot = slDistanceTicks * instr.tickValue; // $ lost per 1.0 lot if SL is hit
+  if (!lossPerLot || lossPerLot <= 0) return fixedLots;
+
+  var equity = Framework.Account.equity;
+  if (!equity || equity <= 0) return fixedLots;
+
+  var riskAmount = equity * (riskPct / 100);
+  var rawLots = riskAmount / lossPerLot;
+
+  var step = instr.lotStep || 0.01;
+  var lots = Math.floor(rawLots / step) * step;
+  var minLot = instr.minLot || step;
+  // FIXED: previously fell back to `lots` itself when the broker didn't report a maxLot,
+  // which silently disabled the cap entirely (min(lots, lots) is a no-op). Now falls back
+  // to Infinity so it never restricts on its own, and the hard cap below always applies
+  // as an independent ceiling regardless of what the broker reports.
+  var brokerMaxLot = instr.maxLot || Infinity;
+  lots = Math.max(minLot, Math.min(brokerMaxLot, lots));
+
+  // Hard safety cap — always enforced, independent of the risk formula and independent of
+  // whatever the broker reports as its own max. This is what stops a tight ATR-based stop
+  // (e.g. during a quiet market) from scaling the calculated lot size up to something
+  // dangerously large just to hit the target dollar risk.
+  if (cfg.hardMaxLot > 0 && lots > cfg.hardMaxLot) {
+    log("Risk-sized lot (" + lots.toFixed(2) + ") exceeded the hard max lot cap (" + cfg.hardMaxLot +
+        ") — capped. This usually means the stop distance was unusually tight (low volatility) for the risk % requested.", "log-warn");
+    lots = cfg.hardMaxLot;
+  }
+
+  lots = Math.round(lots * 100) / 100;
+
+  // Small-account safety check: if the broker's minimum lot is bigger than what the intended
+  // risk % actually calls for, rounding up to it can silently risk far more than requested —
+  // this matters most on small accounts (e.g. $150-1000), where the minimum-lot floor can be
+  // several times the intended dollar risk. Refuse rather than force an oversized trade.
+  var actualRisk = lots * lossPerLot;
+  if (actualRisk > riskAmount * 2) {
+    log("Skipped trade — broker's minimum lot size (" + minLot + ") on " + cfg.instrumentId +
+        " would risk $" + actualRisk.toFixed(2) + ", more than double the intended " + riskPct +
+        "% ($" + riskAmount.toFixed(2) + "). Account may be too small for this instrument at this risk setting.", "log-warn");
+    return 0;
+  }
+
+  return lots;
+}
+
+// ---- Mode presets — Scalper / Swing set the underlying advanced fields at once ----
+function strategyDisplayName(strategy) {
+  if (strategy === "fvg") return "Fair Value Gap (FVG)";
+  if (strategy === "sd") return "Supply & Demand Zones";
+  if (strategy === "onecandle") return "One Candlestick (Zone Scalping)";
+  if (strategy === "breakretest") return "Break & Retest";
+  if (strategy === "trend2020") return "20/200 Trend";
+  return "Original (Trend + Momentum)";
+}
+
+// ---- Strategy-scoped settings visibility — inside "Advanced settings," only the fieldsets that
+// actually matter for the currently-selected strategy are shown; the other strategies' own tuning
+// knobs (and the shared add-on/retest/structural-level machinery only Original/FVG/S&D use) stay
+// hidden instead of piling up into one long scroll for everyone regardless of what they picked.
+function updateStrategyFieldVisibility() {
+  var strat = document.getElementById("strategySelect").value;
+  var fieldsets = document.querySelectorAll("fieldset[data-oc-strategies]");
+  fieldsets.forEach(function (fs) {
+    if (!strat) { fs.style.display = ""; return; } // nothing picked yet — don't hide anything
+    var allowed = fs.getAttribute("data-oc-strategies").split(",");
+    fs.style.display = (allowed.indexOf(strat) !== -1) ? "" : "none";
+  });
+}
+
+// ---- Volatility sensitivity presets — hides the raw threshold/factor numbers behind one
+// simple dropdown, same pattern as Mode and Account Size. "off" turns the whole feature off.
+var VOL_SENSITIVITY_PRESETS = {
+  off:    { calmThreshold: 0.05, aggressiveThreshold: 0.15, calmFactor: 1.0,  aggressiveFactor: 1.0 },
+  low:    { calmThreshold: 0.05, aggressiveThreshold: 0.20, calmFactor: 0.95, aggressiveFactor: 1.25 },
+  medium: { calmThreshold: 0.05, aggressiveThreshold: 0.15, calmFactor: 0.9,  aggressiveFactor: 1.6 },
+  high:   { calmThreshold: 0.05, aggressiveThreshold: 0.12, calmFactor: 0.85, aggressiveFactor: 2.0 }
+};
+function applyVolSensitivityPreset(level) {
+  var p = VOL_SENSITIVITY_PRESETS[level] || VOL_SENSITIVITY_PRESETS.off;
+  document.getElementById("volCalmThreshold").value = p.calmThreshold;
+  document.getElementById("volAggressiveThreshold").value = p.aggressiveThreshold;
+  document.getElementById("volCalmFactor").value = p.calmFactor;
+  document.getElementById("volAggressiveFactor").value = p.aggressiveFactor;
+}
+
+var MODE_PRESETS = {
+  scalper: { timeframe: 300,  pivotTf: 86400,  slAtrMult: 1.5, tpAtrMult: 3, cooldownBars: 1, maxAddOns: 4, requirePivotSide: false, atrMult: 0.2 },
+  swing:   { timeframe: 3600, pivotTf: 604800, slAtrMult: 2.5, tpAtrMult: 6, cooldownBars: 1, maxAddOns: 3, requirePivotSide: false, atrMult: 0.2 }
+};
+// Automatic higher-timeframe for the trend-agreement filter — Scalper (M5) checks against H1,
+// Swing (H1) checks against H4. Nothing user-configurable here on purpose, same as how pivotTf
+// already scales automatically with Mode — the point is this requires zero setup from anyone.
+var HTF_PRESETS = { scalper: 3600, swing: 14400 };
+function applyModePreset(mode) {
+  var p = MODE_PRESETS[mode];
+  if (!p) return; // no mode chosen yet — leave fields untouched rather than guess
+  document.getElementById("timeframe").value = p.timeframe;
+  document.getElementById("pivotTf").value = p.pivotTf;
+  document.getElementById("slAtrMult").value = p.slAtrMult;
+  document.getElementById("tpAtrMult").value = p.tpAtrMult;
+  document.getElementById("cooldownBars").value = p.cooldownBars;
+  document.getElementById("maxAddOns").value = p.maxAddOns;
+  document.getElementById("requirePivotSide").checked = p.requirePivotSide;
+  document.getElementById("atrMult").value = p.atrMult;
+}
+
+// ---- Account size presets — set dollar-denominated sizing/limits/trailing all at once. ----
+// Unlike the ATR-based settings (which self-scale to whatever's being traded), these are raw
+// dollar amounts and don't self-scale to account size on their own — this is what fixes that.
+// These are sensible starting points for the middle of each band, not exact per-account math —
+// a $60 account and a $480 account are both "Small" but aren't identical; nudge from here.
+var ACCOUNT_PRESETS = {
+  small:  { baseRiskPct: 0.5,  addOnRiskPct: 0.25, retestRiskPct: 0.25, levelRetestRiskPct: 0.25,
+            hardMaxLot: 0.10, dailyMaxLoss: 15,  dailyProfitTarget: 20,  trailAfterProfitDollars: 8,   profitLockDistanceDollars: 3,  breakevenBufferDollars: 1, baseLots: 0.01 },
+  medium: { baseRiskPct: 0.75, addOnRiskPct: 0.4,  retestRiskPct: 0.4,  levelRetestRiskPct: 0.4,
+            hardMaxLot: 0.50, dailyMaxLoss: 75,  dailyProfitTarget: 100, trailAfterProfitDollars: 30,  profitLockDistanceDollars: 12, breakevenBufferDollars: 2, baseLots: 0.05 },
+  large:  { baseRiskPct: 1.0,  addOnRiskPct: 0.5,  retestRiskPct: 0.5,  levelRetestRiskPct: 0.5,
+            hardMaxLot: 2.00, dailyMaxLoss: 300, dailyProfitTarget: 400, trailAfterProfitDollars: 150, profitLockDistanceDollars: 60, breakevenBufferDollars: 5, baseLots: 0.10 }
+};
+function applyAccountSizePreset(size) {
+  var p = ACCOUNT_PRESETS[size];
+  if (!p) return; // no size chosen yet — leave fields untouched rather than guess
+  document.getElementById("baseRiskPct").value = p.baseRiskPct;
+  document.getElementById("addOnRiskPct").value = p.addOnRiskPct;
+  document.getElementById("retestRiskPct").value = p.retestRiskPct;
+  document.getElementById("levelRetestRiskPct").value = p.levelRetestRiskPct;
+  document.getElementById("hardMaxLot").value = p.hardMaxLot;
+  document.getElementById("dailyMaxLoss").value = p.dailyMaxLoss;
+  document.getElementById("dailyProfitTarget").value = p.dailyProfitTarget;
+  document.getElementById("trailAfterProfitDollars").value = p.trailAfterProfitDollars;
+  document.getElementById("profitLockDistanceDollars").value = p.profitLockDistanceDollars;
+  document.getElementById("breakevenBufferDollars").value = p.breakevenBufferDollars;
+  document.getElementById("baseLots").value = p.baseLots;
+}
+
+// ---- Order placement -----------------------------------------------
+var pendingManagement = []; // FIFO queue: entries awaiting a matching OnOrderOpen to become "managed"
+var managedOrders = {};     // orderId -> { direction, atrAtEntry, entryPrice, breakevenApplied }
+var BOT_TAG = "QTSniperAutoBot";
+
+// slPriceOverride lets a caller (the FVG strategy) supply an exact stop-loss PRICE, computed
+// from the gap boundary rather than a flat ATR multiple from entry — the gap's own edge is what
+// actually invalidates that setup, not a generic distance. Original strategy callers don't pass
+// this, so their existing ATR-multiple-from-current-price behavior is completely unchanged.
+//
+// batchId and onComplete are used only by the One Candlestick strategy, to fire a batch of
+// several trades back-to-back without fighting the single-order-in-flight guard below — every
+// other caller simply omits them, so nothing changes for Original, FVG, or Supply & Demand.
+function placeOrder(direction, lots, reason, atrAtEntry, tpPriceOverride, currentPrice, slPriceOverride, batchId, onComplete) {
+  if (!lots || lots <= 0) { if (onComplete) onComplete(false); return; } // computeLotSize already logged why, if this was a risk-sizing refusal
+  // Hard lot cap — an absolute ceiling enforced here, on every order from every strategy,
+  // regardless of how the lot size was arrived at. Set by Account Size and no longer a visible
+  // setting, but still real: this is what stops a typo in one of the lot-size fields above from
+  // opening something far bigger than intended.
+  if (cfg.hardMaxLot > 0 && lots > cfg.hardMaxLot) {
+    log("Lot size (" + lots.toFixed(2) + ") exceeded the hard max lot cap (" + cfg.hardMaxLot + ") for " + cfg.instrumentId + " — capped to " + cfg.hardMaxLot + ".", "log-warn");
+    lots = cfg.hardMaxLot;
+  }
+  if (pendingOrder) { log("Skipped " + direction + " (" + reason + ") — previous order still in flight", "log-warn"); if (onComplete) onComplete(false); return; }
+  if (!dailyCapOk()) { log("Skipped " + direction + " (" + reason + ") — daily entry cap (" + cfg.maxEntriesPerDay + ") reached", "log-warn"); if (onComplete) onComplete(false); return; }
+  var blackoutMatch = isInNewsBlackout();
+  if (blackoutMatch) { log("Skipped " + direction + " (" + reason + ") — news blackout window around " + blackoutMatch, "log-warn"); if (onComplete) onComplete(false); return; }
+  if (cfg.sessionWindowOn && !isInsideSessionWindow()) { log("Skipped " + direction + " (" + reason + ") — outside the trading session window (" + cfg.sessionStartTime + "–" + cfg.sessionEndTime + " " + (SESSION_TZ_LABELS[cfg.sessionTimezone] || cfg.sessionTimezone) + ")", "log-warn"); if (onComplete) onComplete(false); return; }
+  entriesToday++;
+
+  var req = {
+    instrumentId: cfg.instrumentId,
+    tradingAction: direction === "buy" ? FXB.OrderTypes.BUY : FXB.OrderTypes.SELL,
+    volume: { lots: lots },
+    comment: BOT_TAG
+  };
+
+  var isLong = direction === "buy";
+
+  // Stop-loss: only set when "Add Stop-Loss" is ON. Computed as a direct absolute price — either
+  // the caller's own override (FVG's gap-boundary stop), or the current close minus an ATR
+  // multiple (Original strategy's default) — never a pip count, which removes the instrument
+  // pipSize entirely from this calculation.
+  if (cfg.addStopLoss) {
+    if (slPriceOverride) {
+      req.sl = slPriceOverride;
+    } else if (atrAtEntry && currentPrice && cfg.slAtrMult > 0) {
+      var slDist = atrAtEntry * cfg.slAtrMult;
+      req.sl = isLong ? (currentPrice - slDist) : (currentPrice + slDist);
+    }
+  }
+
+  // Take-profit: only set when "Add Take-Profit" is ON. Prefers a real structural level (R1/S1/
+  // Fib) when available — falls back to the ATR cap otherwise, also computed as a direct price now.
+  if (cfg.addTakeProfit) {
+    if (tpPriceOverride) {
+      req.tp = tpPriceOverride; // absolute price
+    } else if (atrAtEntry && currentPrice && cfg.tpAtrMult > 0) {
+      var tpDist = atrAtEntry * cfg.tpAtrMult;
+      req.tp = isLong ? (currentPrice + tpDist) : (currentPrice - tpDist);
+    }
+  }
+
+  pendingOrder = true;
+  var settings = {};
+
+  var slTxt = typeof req.sl === "number" ? " | SL " + req.sl.toFixed(5) : (!cfg.addStopLoss ? " | NO STOP-LOSS" : "");
+  var tpTxt = "";
+  if (typeof req.tp === "number") tpTxt = " | TP " + req.tp.toFixed(5) + (tpPriceOverride ? " (structural level)" : "");
+  else if (!cfg.addTakeProfit) tpTxt = " | no fixed TP";
+
+  log((direction === "buy" ? "BUY " : "SELL ") + lots + " lots " + cfg.instrumentId + " — " + reason + slTxt + tpTxt,
+      direction === "buy" ? "log-buy" : "log-sell");
+
+  pendingManagement.push({ direction: direction, atrAtEntry: atrAtEntry || 0, lots: lots, batchId: batchId || null });
+
+  Framework.SendOrder(req, function (MsgResult) {
+    pendingOrder = false;
+    if (MsgResult && MsgResult.result && MsgResult.result.isOkay) {
+      log("Order confirmed OK", "log-info");
+      beep(direction);
+      if (onComplete) onComplete(true);
+    } else {
+      var errText = "unknown error";
+      try { errText = Framework.Translation.TranslateError(MsgResult.result); } catch (e) {}
+      log("Order failed / cancelled: " + errText, "log-warn");
+      // Remove the queued management entry — the order never actually opened
+      var idx = pendingManagement.findIndex(function(p) { return p.direction === direction; });
+      if (idx !== -1) pendingManagement.splice(idx, 1);
+      if (onComplete) onComplete(false);
+    }
+  }, settings);
+}
+
+// Called whenever a new order/trade opens on the account, for this instrument. Two paths:
+// 1) The bot placed it itself (via placeOrder) — there's a queued pendingManagement entry
+//    waiting to be claimed, with the exact lots/direction/ATR the bot used.
+// 2) Nothing is queued — this is a manual trade placed while the bot is running. Rather than
+//    ignore it (which is what used to happen — a manual trade placed after Start was completely
+//    invisible to the bot, only trades placed BEFORE Start ever got picked up), adopt it the
+//    same way a trade re-adopted at Start would be: track it, and if it has no SL/TP, add one
+//    on the next bar close via applyMissingInitialRisk().
+Framework.OnOrderOpen = function (newOrder) {
+  if (!newOrder || !isBotInstrument(newOrder.instrumentId)) return;
+  if (newOrder.orderType !== FXB.OrderTypes.BUY && newOrder.orderType !== FXB.OrderTypes.SELL) return; // ignore pending orders
+  if (managedOrders[newOrder.orderId]) return; // already tracked somehow — don't double-adopt
+
+  if (pendingManagement.length > 0) {
+    var claim = pendingManagement.shift();
+
+    // Convert this specific trade's lot size into "$ per unit of price movement" — this is what
+    // lets Auto Trailing's dollar-denominated thresholds (Trail After Profit / Profit Lock
+    // Distance) translate into an actual price-based stop level, using the same tickSize/tickValue
+    // fields already relied on elsewhere for risk-based sizing. Stored lots too, so manageOpenTrades
+    // can retry this conversion later if instrument data wasn't ready at the exact moment of claim.
+    var instr = Framework.Instruments.get(cfg.instrumentId);
+    var dollarPerPriceUnit = (instr && instr.tickSize && instr.tickValue)
+      ? (claim.lots * instr.tickValue / instr.tickSize) : null;
+
+    managedOrders[newOrder.orderId] = {
+      direction: claim.direction,
+      atrAtEntry: claim.atrAtEntry,
+      entryPrice: newOrder.openPrice,
+      breakevenApplied: false,
+      lots: claim.lots,
+      dollarPerPriceUnit: dollarPerPriceUnit,
+      batchId: claim.batchId || null
+    };
+    if (claim.batchId) {
+      if (!ocBatchGroups[claim.batchId]) ocBatchGroups[claim.batchId] = [];
+      ocBatchGroups[claim.batchId].push(newOrder.orderId);
+    }
+
+    if (cfg.autoTrailingOn && !dollarPerPriceUnit) {
+      log("Order " + newOrder.orderId + " — couldn't read instrument tick data yet, Auto Trailing will retry on the next bar close.", "log-warn");
+    }
+    log("Now managing order " + newOrder.orderId + " (Auto Trailing " + (cfg.autoTrailingOn ? "ON" : "OFF") + ")", "log-info");
+  } else if (isRunning) {
+    managedOrders[newOrder.orderId] = {
+      direction: newOrder.orderType === FXB.OrderTypes.BUY ? "buy" : "sell",
+      atrAtEntry: 0,
+      entryPrice: newOrder.openPrice,
+      breakevenApplied: false,
+      lots: null,
+      dollarPerPriceUnit: null,
+      needsInitialRisk: true // adds a missing SL/TP on the next bar close, same as a trade re-adopted at Start
+    };
+    log("Detected a manual trade on " + cfg.instrumentId + " (order " + newOrder.orderId +
+        ") — adopting it for management. Any missing SL/TP will be added on the next bar close, " +
+        "then breakeven/trailing begins.", "log-buy");
+  }
+};
+
+// ---- Performance tracking — session-based (since last Start), not lifetime account history.
+// Only records trades this widget actually managed (tracked via managedOrders), not every trade
+// on the account, so a manual trade the bot never touched doesn't skew the numbers.
+var tradeLog = []; // { time, instrument, direction, lots, profit }
+
+Framework.OnOrderClose = function (closedOrder) {
+  if (closedOrder && managedOrders[closedOrder.orderId]) {
+    var m = managedOrders[closedOrder.orderId];
+    var profit = (typeof closedOrder.profit === "number") ? closedOrder.profit : null;
+
+    // Fallback: the broker's profit field can occasionally not be populated yet at the exact
+    // instant this close event fires. Rather than silently show nothing for that trade in the
+    // Performance panel, compute it ourselves from open/close price and lot size — the same
+    // tickSize/tickValue conversion already relied on elsewhere for risk sizing and trailing.
+    if (profit === null && typeof closedOrder.openPrice === "number" && typeof closedOrder.closePrice === "number" && m.lots) {
+      var instr = Framework.Instruments.get(cfg ? cfg.instrumentId : closedOrder.instrumentId);
+      if (instr && instr.tickSize && instr.tickValue) {
+        var isLong = m.direction === "buy";
+        var priceDist = isLong ? (closedOrder.closePrice - closedOrder.openPrice) : (closedOrder.openPrice - closedOrder.closePrice);
+        profit = (priceDist / instr.tickSize) * instr.tickValue * m.lots;
+      }
+    }
+
+    tradeLog.push({
+      time: new Date().toLocaleString(),
+      dayKey: currentDayKey(),
+      instrument: closedOrder.instrumentId || (cfg && cfg.instrumentId) || "",
+      direction: m.direction,
+      lots: (typeof closedOrder.volume === "number" && m.lots) ? m.lots : "",
+      profit: profit
+    });
+    refreshStatsDisplay();
+    delete managedOrders[closedOrder.orderId];
+    if (profit === null) {
+      log("Order " + closedOrder.orderId + " closed but profit couldn't be determined — it won't count toward Win Rate/Net P/L. Check your account's own trade history for this one's actual result.", "log-warn");
+    } else {
+      log("Order " + closedOrder.orderId + " closed — stopped managing it", "log-info");
+    }
+  }
+};
+
+function computeStats() {
+  var total = tradeLog.length;
+  var wins = 0, losses = 0, breakeven = 0, netProfit = 0, grossWin = 0, grossLoss = 0, biggestWin = 0, biggestLoss = 0;
+  tradeLog.forEach(function (t) {
+    if (t.profit === null) return;
+    netProfit += t.profit;
+    if (t.profit > 0) { wins++; grossWin += t.profit; if (t.profit > biggestWin) biggestWin = t.profit; }
+    else if (t.profit < 0) { losses++; grossLoss += t.profit; if (t.profit < biggestLoss) biggestLoss = t.profit; }
+    else breakeven++;
+  });
+  var decided = wins + losses;
+  var winRate = decided > 0 ? (wins / decided * 100) : null;
+  return { total: total, wins: wins, losses: losses, breakeven: breakeven, netProfit: netProfit,
+    grossWin: grossWin, grossLoss: grossLoss, biggestWin: biggestWin, biggestLoss: biggestLoss, winRate: winRate };
+}
+
+function refreshStatsDisplay() {
+  var s = computeStats();
+  document.getElementById("statTotalTrades").textContent = s.total;
+  document.getElementById("statWinRate").textContent = s.winRate === null ? "—" : s.winRate.toFixed(1) + "%";
+  document.getElementById("statNetProfit").textContent = (s.netProfit >= 0 ? "+" : "") + s.netProfit.toFixed(2);
+  document.getElementById("statNetProfit").style.color = s.netProfit > 0 ? "#4dffcf" : (s.netProfit < 0 ? "#ff8a80" : "");
+  document.getElementById("statBiggestWin").textContent = s.biggestWin > 0 ? "+" + s.biggestWin.toFixed(2) : "—";
+  document.getElementById("statBiggestLoss").textContent = s.biggestLoss < 0 ? s.biggestLoss.toFixed(2) : "—";
+}
+
+function exportTradeLogCsv() {
+  if (tradeLog.length === 0) { log("No closed trades to export yet.", "log-warn"); return; }
+  var rows = [["Time", "Instrument", "Direction", "Lots", "Profit"]];
+  tradeLog.forEach(function (t) {
+    rows.push([t.time, t.instrument, t.direction, t.lots, t.profit === null ? "" : t.profit]);
+  });
+  var csv = rows.map(function (r) { return r.map(function (v) { return '"' + String(v).replace(/"/g, '""') + '"'; }).join(","); }).join("\n");
+  var blob = new Blob([csv], { type: "text/csv" });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement("a");
+  a.href = url;
+  a.download = "trade-log-" + new Date().toISOString().slice(0, 10) + ".csv";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  log("Exported " + tradeLog.length + " trade(s) to CSV.", "log-info");
+}
+
+// Fires on every real-time balance/equity change — this is what lets the daily circuit
+// breaker, missing SL/TP fill-in, AND Auto Trailing all react immediately instead of waiting
+// for the next bar close. Missing-SL/TP fill-in runs regardless of Auto Trailing's own on/off
+// state — an adopted trade with no protection needs a stop-loss immediately either way.
+Framework.OnAccountMetrics = function () {
+  checkDailyCircuitBreaker();
+  checkSessionWindowTransition();
+  if (Object.keys(forceCloseQueue).length > 0) attemptForceCloses();
+  if (isRunning && cfg) {
+    var rtAtrV = getCurrentProtectionAtr();
+    if (rtAtrV) applyMissingInitialRisk(rtAtrV);
+    if (cfg.autoTrailingOn) manageOpenTrades();
+    ocCheckBatchBackstop();
+  }
+};
+
+// ---- Add a missing initial stop-loss/take-profit to a managed trade that doesn't have one ----
+// This runs for trades re-adopted at Start that were placed without SL/TP (e.g. a manual entry
+// with nothing attached) — it does NOT touch trades that already have their own SL/TP, bot-placed
+// or otherwise. Needs a live ATR reading, so it runs once per bar close alongside manageOpenTrades,
+// not synchronously at Start (candle data isn't loaded yet at that exact moment).
+function applyMissingInitialRisk(atrV) {
+  if (!atrV) return;
+  Object.keys(managedOrders).forEach(function (orderId) {
+    var m = managedOrders[orderId];
+    if (!m.needsInitialRisk) return;
+    if (m.mgmtRetryAt && Date.now() < m.mgmtRetryAt) return; // cooling down from a recent failed attempt
+    if (!globalMgmtThrottleOk()) return; // another order's attempt just went out — wait for the shared window
+    var order = Framework.Orders.get(orderId);
+    if (!order || order.closeTime) { delete managedOrders[orderId]; return; }
+
+    var isLong = m.direction === "buy";
+    var req = { instrumentId: order.instrumentId, orderId: orderId, tradingAction: FXB.OrderTypes.CHANGE };
+    var actions = [];
+
+    if (cfg.addStopLoss && !order.sl && cfg.slAtrMult > 0) {
+      var slDist = atrV * cfg.slAtrMult;
+      req.sl = isLong ? (order.openPrice - slDist) : (order.openPrice + slDist);
+      actions.push("SL " + req.sl.toFixed(5));
+    }
+    if (cfg.addTakeProfit && !order.tp && cfg.tpAtrMult > 0) {
+      var tpDist = atrV * cfg.tpAtrMult;
+      req.tp = isLong ? (order.openPrice + tpDist) : (order.openPrice - tpDist);
+      actions.push("TP " + req.tp.toFixed(5));
+    }
+
+    if (actions.length === 0) {
+      m.needsInitialRisk = false; // genuinely nothing to add — SL/TP already present, or both toggles are off
+      return;
+    }
+
+    Framework.SendOrder(req, function (MsgResult) {
+      if (MsgResult && MsgResult.result && MsgResult.result.isOkay) {
+        log("Added missing " + actions.join(" / ") + " to order " + orderId + " (picked up with no protection)", "log-buy");
+        m.needsInitialRisk = false; // only clear on confirmed success — a failure below leaves it true so it retries
+      } else {
+        var errText = "unknown error";
+        try { errText = Framework.Translation.TranslateError(MsgResult.result); } catch (e) {}
+        log("⚠️ Couldn't add SL/TP to order " + orderId + ": " + errText + " — still unprotected, retrying.", "log-warn");
+        m.mgmtRetryAt = Date.now() + 4000; // cool down, then retry — do NOT give up
+      }
+    }, { confirm: false });
+  });
+}
+
+var warnedZeroTrailAfter = false;
+var warnedZeroLockDistance = false;
+
+function manageOpenTrades(currentAtr) {
+  if (!cfg.autoTrailingOn) return;
+  if (!cfg.trailAfterProfitDollars || cfg.trailAfterProfitDollars <= 0) {
+    if (!warnedZeroTrailAfter) {
+      log("Auto Trailing is ON but 'Trail After Profit' is $0 — set it above 0 or trailing will never trigger.", "log-warn");
+      warnedZeroTrailAfter = true;
+    }
+    return;
+  }
+  if (!cfg.profitLockDistanceDollars || cfg.profitLockDistanceDollars <= 0) {
+    if (!warnedZeroLockDistance) {
+      log("⚠️ Auto Trailing is ON but 'Profit Lock Distance' is $0/blank — trades will move to breakeven but can never actually trail. Set it above 0.", "log-warn");
+      warnedZeroLockDistance = true;
+    }
+  }
+
+  Object.keys(managedOrders).forEach(function (orderId) {
+    var m = managedOrders[orderId];
+    var order = Framework.Orders.get(orderId);
+    if (!order || order.closeTime) { delete managedOrders[orderId]; return; }
+
+    // If a SL update for this specific order failed recently, don't retry it on every single
+    // real-time tick — cool down for a few seconds first. Without this, a persistently-rejected
+    // update (e.g. broker says "not enough working quantity") could fire dozens of times a
+    // second once trailing started reacting in real time, flooding SendOrder and, if "Confirm
+    // every order" is on, popping a confirmation dialog just as fast.
+    if (m.mgmtRetryAt && Date.now() < m.mgmtRetryAt) return;
+
+    var isLong = m.direction === "buy";
+    var price = order.closePrice; // current exit price for an open trade
+    var profitDist = isLong ? (price - m.entryPrice) : (m.entryPrice - price);
+
+    // Prefer the broker's own authoritative profit figure over a manually-derived conversion —
+    // this is exactly the number you'd see in your own P/L display, so it can't drift from
+    // reality. It also lets us derive/refresh the $-per-price ratio directly (profit ÷ distance),
+    // which works even for a trade re-adopted after a reload where we never captured its lot size.
+    var profitDollars;
+    if (typeof order.profit === "number") {
+      profitDollars = order.profit;
+      if (profitDist !== 0) m.dollarPerPriceUnit = order.profit / profitDist;
+    } else {
+      // Fallback only if this broker feed doesn't expose profit at all
+      if (!m.dollarPerPriceUnit && m.lots) {
+        var instrRetry = Framework.Instruments.get(cfg.instrumentId);
+        if (instrRetry && instrRetry.tickSize && instrRetry.tickValue) {
+          m.dollarPerPriceUnit = m.lots * instrRetry.tickValue / instrRetry.tickSize;
+        }
+      }
+      if (!m.dollarPerPriceUnit) return; // can't determine profit any way — skip this bar, retry next
+      profitDollars = profitDist * m.dollarPerPriceUnit;
+    }
+
+    var nowTs = Date.now();
+    if (!m.lastDiagLogTs || nowTs - m.lastDiagLogTs > 3000) {
+      m.lastDiagLogTs = nowTs;
+      log("Order " + orderId + " floating: $" + profitDollars.toFixed(2) +
+          " | breakeven at $" + ((cfg.trailAfterProfitDollars || 0) * 0.5).toFixed(2) +
+          " | trail at $" + cfg.trailAfterProfitDollars.toFixed(2) +
+          (m.breakevenApplied ? " | breakeven done" : ""), "log-info");
+    }
+
+    // Step 1: move to breakeven once profit has genuinely cleared the buffer amount (with a
+    // safety margin), not just a fixed half of "Trail After Profit" — that fixed-half approach
+    // could ask for more profit than the trade had actually earned whenever the buffer was set
+    // close to (or larger than) half the trigger, which is exactly what produced "SL cannot be
+    // lower than the ask price": the bot was asking the broker for a stop beyond current price.
+    // Taking whichever of these is LARGER makes that mismatch structurally impossible.
+    var breakevenTriggerDollars = Math.max(
+      (cfg.trailAfterProfitDollars || 0) * 0.5,
+      (cfg.breakevenBufferDollars || 0) * 1.1
+    );
+    if (!m.breakevenApplied && breakevenTriggerDollars > 0 && profitDollars >= breakevenTriggerDollars) {
+      // Entry price alone still loses the spread (and any commission) if the stop actually gets
+      // hit there — that's a guaranteed small loss, not a true breakeven. This buffer pushes the
+      // stop slightly past entry, in the favorable direction, so getting stopped here means a
+      // tiny locked-in win or a true $0, never a loss.
+      var bufferPrice = (cfg.breakevenBufferDollars > 0 && m.dollarPerPriceUnit)
+        ? (cfg.breakevenBufferDollars / m.dollarPerPriceUnit) : 0;
+      var bePrice = isLong ? (m.entryPrice + bufferPrice) : (m.entryPrice - bufferPrice);
+      var currentSlBE = order.sl;
+      var beImproves = isLong ? (!currentSlBE || bePrice > currentSlBE) : (!currentSlBE || bePrice < currentSlBE);
+
+      if (!beImproves) {
+        m.breakevenApplied = true; // current stop is already at least as good — nothing to do, just mark this step done
+        return;
+      }
+      if (!globalMgmtThrottleOk()) return; // another order's attempt just went out — wait for the shared window, retry next tick
+
+      Framework.SendOrder({
+        instrumentId: order.instrumentId,
+        orderId: orderId,
+        tradingAction: FXB.OrderTypes.CHANGE,
+        sl: bePrice
+      }, function (MsgResult) {
+        if (MsgResult && MsgResult.result && MsgResult.result.isOkay) {
+          m.breakevenApplied = true;
+          log("Order " + orderId + " moved to breakeven" + (bufferPrice > 0 ? " + $" + cfg.breakevenBufferDollars + " buffer" : "") +
+              " (" + bePrice.toFixed(5) + ")", "log-info");
+        } else {
+          var beErrText = "unknown error";
+          try { beErrText = Framework.Translation.TranslateError(MsgResult.result); } catch (e) {}
+          log("Order " + orderId + " breakeven update failed: " + beErrText, "log-warn");
+          m.mgmtRetryAt = Date.now() + 4000; // cool down before retrying this order again
+        }
+      }, { confirm: false });
+      return; // don't also trail on the same bar as the breakeven move
+    }
+
+    // Step 2: once profit clears "Trail After Profit" ($), trail behind price by
+    // "Profit Lock Distance" ($), only ever tightening the stop, never loosening it.
+    if (cfg.trailAfterProfitDollars > 0 && profitDollars >= cfg.trailAfterProfitDollars) {
+      if (!cfg.profitLockDistanceDollars || cfg.profitLockDistanceDollars <= 0) {
+        // A $0/blank Profit Lock Distance produces a stop AT the current price, which every
+        // broker rejects as invalid — silently, over and over, with nothing ever actually
+        // trailing. Refuse outright and say so loudly instead of repeating a doomed request.
+        if (!m.warnedZeroLockDistance) {
+          log("⚠️ Order " + orderId + " qualifies to trail but 'Profit Lock Distance' is $0/blank — " +
+              "set it above 0 (e.g. $5–20) or trailing can never actually move the stop.", "log-warn");
+          m.warnedZeroLockDistance = true;
+        }
+        return;
+      }
+      var trailDistPrice = cfg.profitLockDistanceDollars / m.dollarPerPriceUnit;
+      var desiredSl = isLong ? (price - trailDistPrice) : (price + trailDistPrice);
+      var currentSl = order.sl;
+      var improves = isLong ? (!currentSl || desiredSl > currentSl) : (!currentSl || desiredSl < currentSl);
+
+      if (improves && globalMgmtThrottleOk()) {
+        Framework.SendOrder({
+          instrumentId: order.instrumentId,
+          orderId: orderId,
+          tradingAction: FXB.OrderTypes.CHANGE,
+          sl: desiredSl
+        }, function (MsgResult) {
+          if (MsgResult && MsgResult.result && MsgResult.result.isOkay) {
+            m.breakevenApplied = true;
+            log("Order " + orderId + " trailing stop moved to " + desiredSl.toFixed(5) +
+                " (locking ~$" + cfg.profitLockDistanceDollars + ")", "log-info");
+          } else {
+            var errText = "unknown error";
+            try { errText = Framework.Translation.TranslateError(MsgResult.result); } catch (e) {}
+            log("Order " + orderId + " trailing stop update FAILED: " + errText, "log-warn");
+            m.mgmtRetryAt = Date.now() + 4000; // cool down before retrying this order again
+          }
+        }, { confirm: false });
+      }
+    }
+  });
+}
+
+// ---- Pivot levels from the higher-timeframe store, matching Smart Pivot Points v5's math ----
+function getPivotLevels() {
+  if (!pivotStore || pivotStore.length < 2) return null;
+  var c = pivotStore.GetCandle(1); // last fully-closed pivot period
+  if (!c) return null;
+
+  var H = c.h, L = c.l, Cl = c.c;
+  var range = H - L;
+  if (range <= 0) return null;
+
+  var P  = (H + L + Cl) / 3;
+  var R1 = (2 * P) - L;
+  var R2 = P + range;
+  var R3 = R1 + range;
+  var S1 = (2 * P) - H;
+  var S2 = P - range;
+  var S3 = S1 - range;
+  var fib618R = P + 0.618 * range;
+  var fib382R = P + 0.382 * range;
+  var fib382S = P - 0.382 * range;
+  var fib618S = P - 0.618 * range;
+
+  // Raw previous-period high/low (e.g. Previous Day High/Low when pivotTf is Daily) — the same
+  // "obvious on the chart" level traders actually watch, distinct from the classic pivot-formula
+  // levels above. Kept on the return object so resistanceLadder()/supportLadder() below can treat
+  // it as a real structural level too — previously this was computed here and used ONLY to derive
+  // P/R/S, then discarded, so the room filter, TP targeting, and level-retest entries had no idea
+  // a plain prior high/low even existed as an obstacle.
+  return { P: P, R1: R1, R2: R2, R3: R3, S1: S1, S2: S2, S3: S3,
+    fib382R: fib382R, fib618R: fib618R, fib382S: fib382S, fib618S: fib618S, H: H, L: L };
+}
+
+function getPivotP() {
+  var lv = getPivotLevels();
+  return lv ? lv.P : null;
+}
+
+// Ordered resistance levels above P, ascending — used both as TP targets for longs
+// and as the retest ladder for breakout-retest entries.
+function resistanceLadder(lv) {
+  return [lv.R1, lv.fib382R, lv.R2, lv.fib618R, lv.R3, lv.H].sort(function(a,b){ return a-b; });
+}
+function supportLadder(lv) {
+  return [lv.S1, lv.fib382S, lv.S2, lv.fib618S, lv.S3, lv.L].sort(function(a,b){ return b-a; }); // descending
+}
+
+// Scales the base Stop-loss/Take-profit ATR multiples by how volatile the currently-loaded
+// instrument actually is RIGHT NOW, measured as ATR relative to its own price (a scale-
+// independent comparison — this is what lets a $2,000 gold instrument and a 190-yen forex cross
+// be compared fairly on the same scale, with no hardcoded per-pair list to maintain). Below the
+// calm threshold, the calm factor applies; above the aggressive threshold, the aggressive
+// factor applies; in between, it blends smoothly rather than jumping at a hard cutoff. Both SL
+// and TP always scale by the exact same factor, so the reward-to-risk ratio set by the base
+// Stop-loss/Take-profit values never quietly changes — only their overall size does, together.
+function getVolatilityAdjustedMultipliers(atrV, price) {
+  if (!cfg.volAdjustOn || !atrV || !price || price <= 0) {
+    return { sl: cfg.slAtrMult, tp: cfg.tpAtrMult, factor: 1, relVol: null };
+  }
+  var relVol = (atrV / price) * 100;
+  var calmT = cfg.volCalmThreshold;
+  var aggT = cfg.volAggressiveThreshold;
+  var calmF = cfg.volCalmFactor;
+  var aggF = cfg.volAggressiveFactor;
+
+  var factor;
+  if (aggT <= calmT) {
+    factor = relVol >= calmT ? aggF : calmF; // malformed thresholds — fail toward the safer/simpler binary read rather than divide by zero
+  } else if (relVol <= calmT) {
+    factor = calmF;
+  } else if (relVol >= aggT) {
+    factor = aggF;
+  } else {
+    var t = (relVol - calmT) / (aggT - calmT);
+    factor = calmF + t * (aggF - calmF);
+  }
+
+  return { sl: cfg.slAtrMult * factor, tp: cfg.tpAtrMult * factor, factor: factor, relVol: relVol };
+}
+
+function structuralTPMaxDistance(atr, tpMultOverride) {
+  var mult = (tpMultOverride !== undefined) ? tpMultOverride : cfg.tpAtrMult;
+  return (mult > 0 && atr) ? atr * mult : undefined; // undefined = no cap
+}
+
+// Nearest structural level beyond the current close, in the trade's direction — used as TP.
+// Capped by maxDistance (typically tpAtrMult × ATR) so a level from a wide daily range can't
+// produce a wildly lopsided reward vs the ATR-based stop-loss — if the nearest qualifying
+// level is farther than that, this returns null and the caller falls back to the flat ATR target.
+function nearestStructuralTP(direction, closePrice, lv, maxDistance) {
+  if (!lv) return null;
+  var ladder = direction === "buy" ? resistanceLadder(lv) : supportLadder(lv);
+  for (var i = 0; i < ladder.length; i++) {
+    if (direction === "buy" && ladder[i] > closePrice) {
+      if (maxDistance && (ladder[i] - closePrice) > maxDistance) return null;
+      return ladder[i];
+    }
+    if (direction === "sell" && ladder[i] < closePrice) {
+      if (maxDistance && (closePrice - ladder[i]) > maxDistance) return null;
+      return ladder[i];
+    }
+  }
+  return null;
+}
+
+// Checks there's genuine room between current price and the nearest structural level ahead of
+// it (resistance for a buy, support for a sell) before allowing an entry. Momentum candles —
+// the exact thing the primary signal hunts for — tend to cluster right where price arrives at a
+// recent high/low, since that's how those levels got defined as significant in the first place.
+// Firing an entry with no room left before hitting that level produces two problems at once:
+// a high chance of an immediate stall/rejection, and (since the TP target is the same nearest
+// level) almost no distance between entry and target, so ordinary noise reads as a sharp
+// drawdown relative to how little room the trade had to begin with. Fails OPEN (returns true,
+// doesn't block) whenever the filter is off or there isn't enough data to check against — this
+// is an added quality filter, not a new hard requirement the bot can get stuck waiting on.
+function hasRoomToNextLevel(direction, closePrice, lv, atrV) {
+  if (!cfg.minRoomFilterOn) return true;
+  if (!lv || !atrV) return true;
+  var nearestLevel = nearestStructuralTP(direction, closePrice, lv, undefined); // no cap — the true nearest level
+  if (nearestLevel === null) return true; // no level found ahead in this direction — nothing to be too close to
+  var room = Math.abs(nearestLevel - closePrice);
+  var minRoom = atrV * cfg.minRoomAtrMult;
+  return room >= minRoom;
+}
+
+// Checks that a genuinely bigger timeframe agrees with the direction of this entry — a local
+// trend on the trading timeframe can just be a temporary bounce inside a larger move going the
+// other way, and this is what catches that case before it becomes a bad entry. Uses the exact
+// same EMA-stack read already trusted for the main trend, just computed on htfStore instead of
+// tradingStore. Fails OPEN (returns true, doesn't block) whenever the filter is off or there
+// isn't enough higher-timeframe data yet — an added quality filter, not a new hard requirement
+// the bot can get stuck waiting on.
+function higherTimeframeAgrees(direction) {
+  if (!cfg.requireHtfAgreement) return true;
+  if (!htfStore || htfStore.length < cfg.slowLen + 2) return true;
+  var hFast = htfStore.ta[0].GetValue(1), hMid = htfStore.ta[1].GetValue(1), hSlow = htfStore.ta[2].GetValue(1);
+  if (!hFast || !hMid || !hSlow) return true;
+  var htfBullStack = hFast > hMid && hMid > hSlow;
+  var htfBearStack = hFast < hMid && hMid < hSlow;
+  if (direction === "buy") return htfBullStack;
+  return htfBearStack;
+}
+
+// ================= FVG (Fair Value Gap) strategy ==========================================
+// A Fair Value Gap is a 3-candle imbalance: candle 1 and candle 3 don't overlap, leaving an
+// untouched price zone in the middle (candle 2 is the one that "gapped" through). This is
+// completely separate from the Original strategy's EMA-trend logic — it only runs when
+// cfg.strategy === "fvg", and shares nothing with the Original strategy's entry code. It DOES
+// share every safety/management system downstream of placeOrder() — sizing, SL/TP, Auto
+// Trailing, breakeven, the Daily circuit breaker, the hard lot cap — since those all operate on
+// the trade after it's placed, regardless of which strategy generated it.
+var activeFVGs = []; // { top, bottom, direction, barsActive }
+var FVG_LIST_CAP = 30; // hard cap so this can never grow unbounded across a long session
+
+// Scans the last 3 closed bars for a brand-new gap. Called once per bar, only when the FVG
+// strategy is selected.
+function scanForNewFVG(store, atrV) {
+  if (!store || store.length < 4) return;
+  var c1 = store.GetCandle(3); // oldest of the 3
+  var c3 = store.GetCandle(1); // most recent closed
+  if (!c1 || !c3) return;
+
+  var minGap = (cfg.fvgMinGapAtrMult || 0) * atrV;
+  if (!minGap || minGap <= 0) return;
+
+  // Bullish FVG: candle 1's high sits below candle 3's low — untouched zone in between
+  if (c1.h < c3.l && (c3.l - c1.h) >= minGap) {
+    activeFVGs.push({ top: c3.l, bottom: c1.h, direction: "buy", barsActive: 0 });
+    log("FVG detected: bullish gap " + c1.h.toFixed(5) + " – " + c3.l.toFixed(5) + " on " + cfg.instrumentId, "log-info");
+  }
+  // Bearish FVG: candle 1's low sits above candle 3's high — untouched zone in between
+  if (c1.l > c3.h && (c1.l - c3.h) >= minGap) {
+    activeFVGs.push({ top: c1.l, bottom: c3.h, direction: "sell", barsActive: 0 });
+    log("FVG detected: bearish gap " + c3.h.toFixed(5) + " – " + c1.l.toFixed(5) + " on " + cfg.instrumentId, "log-info");
+  }
+
+  if (activeFVGs.length > FVG_LIST_CAP) activeFVGs = activeFVGs.slice(activeFVGs.length - FVG_LIST_CAP);
+}
+
+// Ages every tracked gap, drops expired/invalidated ones, and checks whether the current bar's
+// retest into an active gap qualifies as an entry trigger (with or without requiring a genuine
+// reaction candle there, per settings). Returns at most one buy trigger and one sell trigger per
+// bar — the earliest-formed qualifying gap in each direction, consumed once triggered so the
+// same gap can't fire twice.
+function updateAndCheckFVGs(candle) {
+  var triggeredBuy = null, triggeredSell = null;
+  var maxBars = cfg.fvgMaxBarsActive || 50;
+
+  activeFVGs = activeFVGs.filter(function (fvg) {
+    fvg.barsActive++;
+    if (fvg.barsActive > maxBars) return false; // stale — never retested in a reasonable window, drop it
+
+    var enteredZone = candle.l <= fvg.top && candle.h >= fvg.bottom; // this candle traded into the gap
+    if (!enteredZone) return true; // still active, untouched this bar
+
+    if (fvg.direction === "buy") {
+      var reactionOk = !cfg.fvgRequireReaction || (candle.c > candle.o && candle.c >= fvg.bottom);
+      if (reactionOk && !triggeredBuy) { triggeredBuy = fvg; return false; } // consumed
+      var fullyFilledBull = candle.c < fvg.bottom;
+      return !fullyFilledBull; // closed fully through it without reacting — invalidated, drop; otherwise keep for next bar
+    } else {
+      var reactionOkS = !cfg.fvgRequireReaction || (candle.c < candle.o && candle.c <= fvg.top);
+      if (reactionOkS && !triggeredSell) { triggeredSell = fvg; return false; } // consumed
+      var fullyFilledBear = candle.c > fvg.top;
+      return !fullyFilledBear;
+    }
+  });
+
+  return { triggeredBuy: triggeredBuy, triggeredSell: triggeredSell };
+}
+
+// ---- Core signal + trading logic, called on each new closed bar -----
+// Reads a current ATR value directly from the live candle store — safe to call any time,
+// not just on a bar close, since tradingStore's calculations stay current between bar events.
+// This is what lets trade protection (missing SL/TP, breakeven, trailing) react instantly to a
+// real-time account update instead of waiting for the next candle to close.
+// ================= Supply & Demand Zones strategy =========================================
+// Looks for a tight consolidation ("base") immediately followed by a strong breakout candle
+// away from it — the classic Rally-Base-Drop / Drop-Base-Rally pattern. The base area itself
+// becomes the zone. This is deliberately a DIFFERENT detection mechanism from FVG's precise
+// 3-candle gap — a multi-candle consolidation-then-breakout, not a fixed pattern — so the two
+// strategies actually behave differently, not just cosmetically. Only runs when
+// cfg.strategy === "sd", shares nothing with FVG's or Original's entry code, but shares every
+// safety/management system downstream of placeOrder() just like they do.
+var activeSDZones = []; // { top, bottom, direction, barsActive, timesTested }
+var SD_ZONE_LIST_CAP = 30;
+
+// Scans for a new base+breakout pattern ending at the just-closed bar. Called once per bar,
+// only when the Supply & Demand strategy is selected.
+function scanForNewSDZone(store, atrV) {
+  if (!store) return;
+  var breakoutCandle = store.GetCandle(1); // the just-closed bar is the candidate breakout candle
+  if (!breakoutCandle) return;
+  var breakoutRange = breakoutCandle.h - breakoutCandle.l;
+  if (breakoutRange <= 0) return;
+
+  var minBreakout = (cfg.sdBreakoutMinAtrMult || 0) * atrV;
+  if (!minBreakout || breakoutRange < minBreakout) return; // not a strong enough move to count as a breakout
+
+  var isBullBreakout = breakoutCandle.c > breakoutCandle.o && (breakoutCandle.c - breakoutCandle.l) / breakoutRange >= 0.5;
+  var isBearBreakout = breakoutCandle.c < breakoutCandle.o && (breakoutCandle.h - breakoutCandle.c) / breakoutRange >= 0.5;
+  if (!isBullBreakout && !isBearBreakout) return;
+
+  // Walk backward from the bar just before the breakout, collecting consecutive tight-range
+  // candles as the base. Stops at the first candle that's too wide to be part of a consolidation.
+  var maxBase = cfg.sdMaxBaseCandles || 3;
+  var maxBaseRange = (cfg.sdBaseMaxRangeAtrMult || 0) * atrV;
+  var baseHigh = -Infinity, baseLow = Infinity, baseCount = 0;
+  for (var k = 2; k <= maxBase + 1; k++) {
+    var bc = store.GetCandle(k);
+    if (!bc) break;
+    var bcRange = bc.h - bc.l;
+    if (bcRange > maxBaseRange) break; // too wide, not part of the base — base ends here
+    baseHigh = Math.max(baseHigh, bc.h);
+    baseLow = Math.min(baseLow, bc.l);
+    baseCount++;
+  }
+  if (baseCount === 0) return; // no valid consolidation immediately before the breakout candle
+
+  if (isBullBreakout) {
+    // Demand zone — price broke UP away from this base, expected to react bullishly if it returns.
+    activeSDZones.push({ top: baseHigh, bottom: baseLow, direction: "buy", barsActive: 0, timesTested: 0 });
+    log("Supply/Demand: demand zone " + baseLow.toFixed(5) + " – " + baseHigh.toFixed(5) + " on " + cfg.instrumentId, "log-info");
+  } else {
+    activeSDZones.push({ top: baseHigh, bottom: baseLow, direction: "sell", barsActive: 0, timesTested: 0 });
+    log("Supply/Demand: supply zone " + baseLow.toFixed(5) + " – " + baseHigh.toFixed(5) + " on " + cfg.instrumentId, "log-info");
+  }
+
+  if (activeSDZones.length > SD_ZONE_LIST_CAP) activeSDZones = activeSDZones.slice(activeSDZones.length - SD_ZONE_LIST_CAP);
+}
+
+// Ages every tracked zone, drops stale/violated/exhausted ones, and checks whether the current
+// bar's retest into a zone qualifies as an entry trigger. Unlike FVG's gaps (consumed on first
+// trigger), a zone can be retested multiple times — up to "Max retests before zone expires" —
+// which is the actual freshness/decay mechanic real supply/demand trading relies on.
+function updateAndCheckSDZones(candle) {
+  var triggeredBuy = null, triggeredSell = null;
+  var maxBars = cfg.sdMaxBarsActive || 80;
+  var maxRetests = cfg.sdMaxRetests || 2;
+
+  activeSDZones = activeSDZones.filter(function (zone) {
+    zone.barsActive++;
+    if (zone.barsActive > maxBars) return false; // never retested in a reasonable window — stale, drop it
+
+    var enteredZone = candle.l <= zone.top && candle.h >= zone.bottom;
+    if (!enteredZone) return true; // untouched this bar, keep watching
+
+    zone.timesTested++;
+
+    if (zone.direction === "buy") {
+      var reactionOk = !cfg.sdRequireReaction || (candle.c > candle.o && candle.c >= zone.bottom);
+      if (reactionOk && !triggeredBuy) triggeredBuy = zone;
+      if (candle.c < zone.bottom) return false; // price closed fully through it — demand failed, drop it
+    } else {
+      var reactionOkS = !cfg.sdRequireReaction || (candle.c < candle.o && candle.c <= zone.top);
+      if (reactionOkS && !triggeredSell) triggeredSell = zone;
+      if (candle.c > zone.top) return false; // supply failed, drop it
+    }
+
+    if (zone.timesTested >= maxRetests) return false; // this retest still counts as a valid trigger above — the zone just won't be tracked for a future one
+
+    return true; // survives for a future retest
+  });
+
+  return { triggeredBuy: triggeredBuy, triggeredSell: triggeredSell };
+}
+
+// ================= One Candlestick (Zone Scalping) strategy ===============================
+// Watches H1 and H4 simultaneously for swing highs/lows that have genuinely been tested more
+// than once — "proven" zones. On every M1 close, checks whether price is sitting at one of
+// those zones right now and whether the just-closed 1-minute candle rejected it: a green M1
+// candle at a proven resistance zone triggers a SELL batch, a red M1 candle at a proven support
+// zone triggers a BUY batch. Runs on its own dedicated M1/H1/H4 candle stores, completely
+// independent of whatever timeframe Mode would normally dictate — this strategy is deliberately
+// faster and more reactive than Original, FVG, or Supply & Demand, and shares nothing with any
+// of their entry code. It DOES share Auto Trailing for exits (tune those settings small for
+// this strategy's quick style) and gets its own separate safety net: a silent max-loss-per-batch
+// backstop, since these trades are placed without a real broker-side stop-loss by design.
+
+// Simple N-bar fractal check: a candle is a swing high/low if its high/low is the most extreme
+// among the 2 candles on each side of it — the minimum confirmation needed to call it a genuine
+// local extreme rather than still-forming price action. Scans the FULL currently-available
+// history every time it's called (capped at 500 bars for a sane bound), rather than assuming a
+// single new bar arrives and gets checked once — that assumption is what caused zones to never
+// be found at all. Safe to re-scan the same bars repeatedly: ocRegisterSwingPoint below only
+// ever counts a specific swing point once, no matter how many times it's re-seen here.
+function ocFindSwingPoints(store, atrV) {
+  if (!store || store.length < 6) return;
+  var maxIdx = Math.min(store.length - 2, 500);
+  for (var idx = 3; idx <= maxIdx; idx++) {
+    var mid = store.GetCandle(idx);
+    if (!mid) continue;
+    var isSwingHigh = true, isSwingLow = true;
+    for (var k = idx - 2; k <= idx + 2; k++) {
+      if (k === idx) continue;
+      var nb = store.GetCandle(k);
+      if (!nb) { isSwingHigh = false; isSwingLow = false; break; }
+      if (nb.h >= mid.h) isSwingHigh = false;
+      if (nb.l <= mid.l) isSwingLow = false;
+    }
+    var tolerance = (cfg.ocZoneToleranceAtrMult || 0.15) * atrV;
+    if (isSwingHigh) ocRegisterSwingPoint(mid.h, "resistance", tolerance);
+    if (isSwingLow) ocRegisterSwingPoint(mid.l, "support", tolerance);
+  }
+}
+
+// Clusters a new swing point into an existing zone if it's close enough to one already being
+// tracked (within that zone's own tolerance), incrementing its touch count — otherwise starts
+// tracking it as a brand-new zone with just 1 touch. A zone only becomes tradeable once its
+// touch count reaches "Min touches for a proven zone."
+function ocRegisterSwingPoint(level, type, tolerance) {
+  var now = Date.now();
+  var priceKey = level.toFixed(6); // identifies this exact swing point, so a re-scan of the same history never double-counts it
+  for (var i = 0; i < ocZones.length; i++) {
+    var z = ocZones[i];
+    if (z.type === type && Math.abs(z.level - level) <= tolerance) {
+      if (!z.seenPriceKeys) z.seenPriceKeys = {};
+      if (z.seenPriceKeys[priceKey]) return; // already counted this exact swing point before — not a new touch
+      z.seenPriceKeys[priceKey] = true;
+      z.touches++;
+      z.lastTouchedAtMs = now;
+      z.tolerance = Math.max(z.tolerance, tolerance);
+      if (z.touches === (cfg.ocMinTouches || 2)) {
+        log("One Candlestick: " + type + " zone " + z.level.toFixed(5) + " just became PROVEN (touch #" + z.touches + ") on " + cfg.instrumentId, "log-info");
+      }
+      return;
+    }
+  }
+  var newZone = { level: level, type: type, touches: 1, tolerance: tolerance, lastTouchedAtMs: now, lastTriggeredAtMs: 0, seenPriceKeys: {} };
+  newZone.seenPriceKeys[priceKey] = true;
+  ocZones.push(newZone);
+  if (ocZones.length > OC_ZONE_CAP) ocZones.shift();
+}
+
+function ocPruneStaleZones() {
+  var maxAgeMs = (cfg.ocZoneExpireHours || 48) * 3600000;
+  var now = Date.now();
+  ocZones = ocZones.filter(function (z) { return (now - z.lastTouchedAtMs) <= maxAgeMs; });
+}
+
+// Tracks the CURRENT clock hour's own developing range and direction, built minute by minute
+// from M1 data — this is what lets the strategy judge "is this a genuinely full-size push" and
+// "which way is this hour actually going" in real time, without needing to read the platform's
+// still-forming H1 candle directly. Resets the instant the wall-clock hour rolls over.
+var ocHourState = { hourKey: null, hourOpen: null, hourHigh: -Infinity, hourLow: Infinity };
+// Tracks what the most recently fired batch actually was, so the moment it fully closes, the
+// bot can decide whether to flip into a continuation trade with the hour's own direction.
+var ocLastBatchType = null;      // "rejection" | "continuation" | null
+var ocLastBatchDirection = null; // "buy" | "sell"
+var ocLastBatchHourKey = null;   // which hour that batch was fired in — a continuation never carries into a new hour
+// Tracks an in-progress stretch sequence — separate from the zone trigger's one-shot batches,
+// since a stretch sequence can add on multiple times, one at a time, as the same push keeps
+// extending further, all sharing ONE batchId so they close and get treated as a single group.
+var ocStretchState = { active: false, direction: null, batchId: null, entriesFired: 0, extremeSoFar: null, hourKey: null };
+
+var ocFlipsThisHour = 0; // how many continuation flips have already fired in the current hour — capped by ocMaxFlipsPerHour
+
+function ocUpdateHourTracker(candle) {
+  var hourKey = Math.floor(Date.now() / 3600000);
+  if (ocHourState.hourKey !== hourKey) {
+    // A new clock hour has started — this is a brand new candle to work, start fresh. Any
+    // continuation that was still pending from the old hour no longer applies.
+    ocHourState = { hourKey: hourKey, hourOpen: candle.o, hourHigh: candle.h, hourLow: candle.l };
+    ocFlipsThisHour = 0;
+  } else {
+    ocHourState.hourHigh = Math.max(ocHourState.hourHigh, candle.h);
+    ocHourState.hourLow = Math.min(ocHourState.hourLow, candle.l);
+  }
+}
+
+function ocIsFullSizeHour(h1AtrV) {
+  if (!h1AtrV || ocHourState.hourOpen === null) return false;
+  var range = ocHourState.hourHigh - ocHourState.hourLow;
+  return range >= (cfg.ocFullCandleAtrMult || 0.6) * h1AtrV;
+}
+
+function ocCurrentHourColor(currentPrice) {
+  if (ocHourState.hourOpen === null) return null;
+  if (currentPrice > ocHourState.hourOpen) return "green";
+  if (currentPrice < ocHourState.hourOpen) return "red";
+  return null;
+}
+
+// Returns the id of the one batch currently in flight, or null if none. Used both to gate new
+// zone entries and — critically — to stop the stretch trigger from stacking a second, unrelated
+// batch (a fresh opposite-direction stretch, or a stretch firing while a zone rejection is still
+// open) on top of one that's already live. This strategy is meant to run ONE batch at a time.
+function ocOpenBatchId() {
+  var found = null;
+  Object.keys(ocBatchGroups).some(function (batchId) {
+    if (ocBatchGroups[batchId] && ocBatchGroups[batchId].length > 0) { found = batchId; return true; }
+    return false;
+  });
+  return found;
+}
+
+function ocHasOpenBatch() {
+  return ocOpenBatchId() !== null;
+}
+
+// The actual live entry check, run on every M1 close. Updates the running "current hour"
+// tracker first, capturing what the hour's own high/low were BEFORE this candle, since that's
+// what the stretch trigger measures against. Two independent trigger paths run from here: the
+// zone trigger (one-shot batch, gated behind nothing else currently being open) and the stretch
+// trigger (can add on repeatedly as the same push keeps extending). Both require the current
+// hour to already be a genuine, full-size push before anything can fire at all.
+function ocCheckM1Trigger(candle, h1AtrV) {
+  var prevHourKey = ocHourState.hourKey;
+  var prevHourLow = ocHourState.hourLow;
+  var prevHourHigh = ocHourState.hourHigh;
+  ocUpdateHourTracker(candle);
+
+  if (ocHourState.hourKey !== prevHourKey) {
+    // A new clock hour just started — any in-progress stretch sequence from the old hour is over.
+    ocStretchState = { active: false, direction: null, batchId: null, entriesFired: 0, extremeSoFar: null, hourKey: null };
+    return; // nothing to compare this candle against yet — the very first candle of a fresh hour
+  }
+
+  if (!ocIsFullSizeHour(h1AtrV)) return;
+
+  if (cfg.ocEnableStretchEntries) {
+    ocCheckStretchTrigger(candle, h1AtrV, prevHourLow, prevHourHigh);
+  }
+
+  if (cfg.ocEnableZoneEntries && !ocHasOpenBatch()) {
+    var provenZones = ocZones.filter(function (z) { return z.touches >= (cfg.ocMinTouches || 2); });
+    if (provenZones.length === 0) return;
+
+    var hourColor = ocCurrentHourColor(candle.c);
+    if (!hourColor) return;
+
+    for (var i = 0; i < provenZones.length; i++) {
+      var z = provenZones[i];
+      var touchedZone = candle.l <= z.level + z.tolerance && candle.h >= z.level - z.tolerance;
+      if (!touchedZone) continue;
+
+      if (z.type === "resistance" && hourColor === "green") {
+        ocFireBatch("sell", z, h1AtrV, candle.c, "rejection");
+        return; // one zone trigger per M1 close — keeps behavior simple and predictable
+      }
+      if (z.type === "support" && hourColor === "red") {
+        ocFireBatch("buy", z, h1AtrV, candle.c, "rejection");
+        return;
+      }
+    }
+  }
+}
+
+// The stretch trigger — completely independent of the zone system. Fires the moment this candle
+// pushes a genuinely FRESH extreme for the hour (further than its previous own high/low), with
+// its own close still close to that extreme (no reject wick has formed in this candle yet,
+// meaning the push is still raw and ongoing) — this is the actual moment described: get in
+// while it's still stretching, before it shows the wick that means it already turned. Can add
+// on again, one entry at a time, each time the SAME push extends even further, up to "Entries
+// per trigger," all sharing one batch so they close together once the retrace finally comes.
+function ocCheckStretchTrigger(candle, h1AtrV, prevHourLow, prevHourHigh) {
+  // If the active sequence's batch has already fully closed (picked up via the real-time
+  // backstop check), clear it so a fresh sequence can start the next time conditions qualify.
+  if (ocStretchState.active && ocStretchState.batchId && !ocBatchGroups[ocStretchState.batchId]) {
+    ocStretchState = { active: false, direction: null, batchId: null, entriesFired: 0, extremeSoFar: null, hourKey: null };
+  }
+
+  // If some OTHER batch is already live — a zone rejection currently in flight, or a stretch
+  // sequence going the opposite way that hasn't closed yet — do not start or add to a stretch
+  // sequence right now. Without this, a fresh stretch in the other direction could fire on top of
+  // an already-open batch, leaving two batches (sometimes opposite directions) open at once, each
+  // watched by its own max-loss backstop independently — silently doubling real account exposure
+  // instead of running the one clean in-and-out trade this strategy is built around.
+  var openBatchId = ocOpenBatchId();
+  if (openBatchId && openBatchId !== ocStretchState.batchId) return;
+
+  var range = candle.h - candle.l;
+  if (range <= 0) return;
+  var stretchThreshold = (cfg.ocStretchAtrMult || 0.15) * h1AtrV;
+  var wickFraction = cfg.ocStretchWickFraction || 0.3;
+  var maxEntries = cfg.ocTradeCount || 3;
+
+  // A fresh, further-extending push DOWN — the candidate counter-entry is a BUY.
+  var newLowExtension = prevHourLow - candle.l;
+  var closeNearLow = (candle.c - candle.l) / range <= wickFraction; // still pushing — no reject wick shown in THIS candle yet
+  if (newLowExtension >= stretchThreshold && closeNearLow) {
+    if (!ocStretchState.active || ocStretchState.direction !== "buy" || ocStretchState.hourKey !== ocHourState.hourKey) {
+      ocStretchState = { active: true, direction: "buy", batchId: null, entriesFired: 0, extremeSoFar: candle.l, hourKey: ocHourState.hourKey };
+    }
+    if (ocStretchState.entriesFired < maxEntries && candle.l <= ocStretchState.extremeSoFar) {
+      ocStretchState.extremeSoFar = candle.l;
+      ocFireStretchEntry("buy", h1AtrV, candle.c);
+      return;
+    }
+  }
+
+  // A fresh, further-extending push UP — the candidate counter-entry is a SELL.
+  var newHighExtension = candle.h - prevHourHigh;
+  var closeNearHigh = (candle.h - candle.c) / range <= wickFraction;
+  if (newHighExtension >= stretchThreshold && closeNearHigh) {
+    if (!ocStretchState.active || ocStretchState.direction !== "sell" || ocStretchState.hourKey !== ocHourState.hourKey) {
+      ocStretchState = { active: true, direction: "sell", batchId: null, entriesFired: 0, extremeSoFar: candle.h, hourKey: ocHourState.hourKey };
+    }
+    if (ocStretchState.entriesFired < maxEntries && candle.h >= ocStretchState.extremeSoFar) {
+      ocStretchState.extremeSoFar = candle.h;
+      ocFireStretchEntry("sell", h1AtrV, candle.c);
+      return;
+    }
+  }
+}
+
+// Fires a single stretch entry, either starting a new shared batch (first entry of a fresh
+// sequence) or adding into the existing one (a further add-on as the push keeps extending) —
+// OnOrderOpen already appends to an existing batchId's group rather than overwriting it, so this
+// naturally accumulates correctly. Registered the same way as a zone-trigger batch for the
+// continuation-flip logic, so once the WHOLE sequence eventually closes, the same flip-to-the-
+// hour's-own-direction behavior applies here too.
+function ocFireStretchEntry(direction, atrV, currentPrice) {
+  if (!ocStretchState.batchId) {
+    ocStretchState.batchId = "ocstretch" + (ocNextBatchId++);
+    ocBatchGroups[ocStretchState.batchId] = [];
+    ocLastBatchType = "rejection";
+    ocLastBatchDirection = direction;
+    ocLastBatchHourKey = ocHourState.hourKey;
+  }
+  ocStretchState.entriesFired++;
+  var reason = "One Candlestick — stretch entry #" + ocStretchState.entriesFired + " (fresh extension, no reject wick yet)";
+  log("One Candlestick stretch: " + direction.toUpperCase() + " #" + ocStretchState.entriesFired + " (batch " + ocStretchState.batchId + ")",
+      direction === "buy" ? "log-buy" : "log-sell");
+  placeOrder(direction, cfg.ocLots || 0.02, reason, atrV, null, currentPrice, null, ocStretchState.batchId, null);
+}
+
+// zone is null for a continuation trade (it doesn't fire off a specific zone — it's riding the
+// hour's own established push after the rejection scalp already banked its profit).
+function ocFireBatch(direction, zone, atrV, currentPrice, actionType) {
+  var count = cfg.ocTradeCount || 3;
+  var batchId = "oc" + (ocNextBatchId++);
+  ocBatchGroups[batchId] = [];
+  ocLastBatchType = actionType;
+  ocLastBatchDirection = direction;
+  ocLastBatchHourKey = ocHourState.hourKey;
+  var reason = (actionType === "continuation")
+    ? "One Candlestick — continuation with the hour's own push"
+    : "One Candlestick — rejection off " + zone.type + " " + zone.level.toFixed(5) + " (tested " + zone.touches + "x)";
+  log("One Candlestick " + actionType + ": " + direction.toUpperCase() + " x" + count +
+      (zone ? " at " + zone.type + " " + zone.level.toFixed(5) : "") + " (batch " + batchId + ")",
+      direction === "buy" ? "log-buy" : "log-sell");
+  ocDispatchBatch(direction, count, cfg.ocLots || 0.02, reason, atrV, currentPrice, batchId);
+}
+
+// Fires the batch's trades one after another, each waiting only for the PREVIOUS one's own
+// SendOrder confirmation/rejection to resolve — not a fixed guessed delay — so the whole batch
+// goes out essentially back-to-back, as fast as the platform allows, without fighting the
+// single-order-in-flight safety guard inside placeOrder.
+function ocDispatchBatch(direction, remaining, lots, reason, atrV, currentPrice, batchId) {
+  if (remaining <= 0) return;
+  placeOrder(direction, lots, reason, atrV, null, currentPrice, null, batchId, function () {
+    ocDispatchBatch(direction, remaining - 1, lots, reason, atrV, currentPrice, batchId);
+  });
+}
+
+// Called the instant a batch is confirmed fully closed (see ocCheckBatchBackstop below). If
+// that batch was a rejection scalp, and the same clock hour it fired in is still the current
+// one, this is the flip: trade WITH the hour's own established direction instead — the exact
+// opposite of the rejection, by construction, since the rejection was deliberately counter-
+// trend. A continuation closing does NOT chain into another continuation — it just returns to
+// normal zone-watching, so the cycle can repeat for as long as the hour stays open.
+function ocOnBatchFullyClosed() {
+  if (ocLastBatchType !== "rejection") { ocLastBatchType = null; return; }
+  var currentHourKey = Math.floor(Date.now() / 3600000);
+  if (ocLastBatchHourKey !== currentHourKey || ocHourState.hourOpen === null) { ocLastBatchType = null; return; }
+
+  var continuationDirection = ocLastBatchDirection === "sell" ? "buy" : "sell";
+  ocLastBatchType = null; // consumed — never fire the same flip twice either way
+
+  if (!cfg.ocEnableContinuationFlip) {
+    log("One Candlestick: rejection closed — continuation flip is turned off, sitting flat until the next signal.", "log-info");
+    return;
+  }
+  var maxFlips = (cfg.ocMaxFlipsPerHour === undefined || cfg.ocMaxFlipsPerHour === null) ? 1 : cfg.ocMaxFlipsPerHour;
+  if (maxFlips > 0 && ocFlipsThisHour >= maxFlips) {
+    log("One Candlestick: rejection closed, but this hour already used its " + maxFlips + " flip(s) — sitting flat instead of chasing another.", "log-info");
+    return;
+  }
+
+  var h1AtrV = (ocStoreH1 && ocStoreH1.ta[0] && ocStoreH1.ta[0].GetValue(1)) || null;
+  var m1Candle = ocStoreM1 ? ocStoreM1.GetCandle(1) : null;
+  var currentPrice = m1Candle ? m1Candle.c : null;
+  if (!h1AtrV || !currentPrice) return; // not enough data to safely price a continuation entry right now
+
+  ocFlipsThisHour++;
+  log("One Candlestick: rejection closed, hour's own push still intact — flipping to " + continuationDirection.toUpperCase() + " continuation (flip " + ocFlipsThisHour + (maxFlips > 0 ? "/" + maxFlips : "") + " this hour).", "log-info");
+  ocFireBatch(continuationDirection, null, h1AtrV, currentPrice, "continuation");
+}
+
+// The safety net for this strategy specifically — since these trades carry no real broker-side
+// stop-loss by design, this silently watches each batch's COMBINED floating profit/loss and
+// force-closes every trade in that batch the instant the total breaches "Max loss per batch."
+// This is ALSO where a batch's genuine closure gets detected in real time (not waiting for the
+// next M1 close), which is what makes the continuation flip fire immediately instead of up to a
+// minute late. Runs on every real-time account update, same cadence as trailing and the daily
+// circuit breaker.
+function ocCheckBatchBackstop() {
+  if (!cfg || cfg.strategy !== "onecandle") return;
+  var maxLoss = cfg.ocMaxLossPerBatch || 0;
+  Object.keys(ocBatchGroups).forEach(function (batchId) {
+    var orderIds = ocBatchGroups[batchId];
+    if (!orderIds || orderIds.length === 0) { delete ocBatchGroups[batchId]; return; }
+    var totalFloating = 0;
+    var stillOpen = [];
+    orderIds.forEach(function (orderId) {
+      var order = Framework.Orders.get(orderId);
+      if (order && !order.closeTime) {
+        stillOpen.push(orderId);
+        if (typeof order.profit === "number") totalFloating += order.profit;
+      }
+    });
+    if (stillOpen.length === 0) {
+      delete ocBatchGroups[batchId];
+      ocOnBatchFullyClosed();
+      return;
+    }
+    ocBatchGroups[batchId] = stillOpen;
+    if (maxLoss > 0 && totalFloating <= -maxLoss) {
+      log("🛑 One Candlestick batch " + batchId + " hit the max loss backstop ($" + totalFloating.toFixed(2) +
+          ") — force-closing all " + stillOpen.length + " trade(s) in this batch.", "log-warn");
+      stillOpen.forEach(function (orderId) { forceCloseQueue[orderId] = { attempts: 0 }; });
+      attemptForceCloses();
+      // Deliberately NOT calling ocOnBatchFullyClosed here — force-close is only queued, not yet
+      // confirmed closed by the broker. The genuine closure gets picked up naturally on a later
+      // tick once stillOpen actually reaches 0.
+    }
+  });
+}
+
+// ---- One Candlestick's own candle-close handlers — completely separate from onNewTradingBar,
+// since this strategy runs on M1/H1/H4 regardless of what Mode's timeframe would otherwise be.
+function onOcH1Bar() {
+  if (!isRunning || !cfg || !cfg.autoTradingOn || cfg.strategy !== "onecandle") return;
+  if (!ocStoreH1 || ocStoreH1.length < 6) return;
+  var c1 = ocStoreH1.GetCandle(1);
+  var atrV = (ocStoreH1.ta[0] && ocStoreH1.ta[0].GetValue(1)) || (c1 ? c1.h - c1.l : null);
+  if (!atrV) return;
+  ocFindSwingPoints(ocStoreH1, atrV);
+  ocPruneStaleZones();
+}
+function onOcH4Bar() {
+  if (!isRunning || !cfg || !cfg.autoTradingOn || cfg.strategy !== "onecandle") return;
+  if (!ocStoreH4 || ocStoreH4.length < 6) return;
+  var c1 = ocStoreH4.GetCandle(1);
+  var atrV = (ocStoreH4.ta[0] && ocStoreH4.ta[0].GetValue(1)) || (c1 ? c1.h - c1.l : null);
+  if (!atrV) return;
+  ocFindSwingPoints(ocStoreH4, atrV);
+  ocPruneStaleZones();
+}
+function onOcM1Bar() {
+  if (!isRunning || !cfg || !cfg.autoTradingOn || cfg.strategy !== "onecandle") return;
+  if (!ocStoreM1 || ocStoreM1.length < 2) return;
+  var candle = ocStoreM1.GetCandle(1);
+  if (!candle) return;
+  var range = candle.h - candle.l;
+  if (range <= 0) return;
+  checkDailyCircuitBreaker();
+  if (!isRunning) return; // may have just tripped
+  var h1AtrV = (ocStoreH1 && ocStoreH1.ta[0] && ocStoreH1.ta[0].GetValue(1)) || null;
+  if (!h1AtrV) return; // need H1's own ATR to judge "full-size" — not ready yet
+  ocCheckM1Trigger(candle, h1AtrV);
+}
+
+function getCurrentProtectionAtr() {
+  if (!tradingStore || tradingStore.length < 2) return null;
+  var protectAtr = tradingStore.ta[3]; // ATR(14)
+  var protectCandle = tradingStore.GetCandle(1);
+  if (!protectCandle) return null;
+  var protectRange = protectCandle.h - protectCandle.l;
+  return protectAtr.GetValue(1) || protectRange || null;
+}
+
+function onNewTradingBar() {
+  // Retry any stuck force-closes even while stopped — this runs BEFORE the isRunning check on
+  // purpose. A circuit-breaker trip sets isRunning=false, and if a close attempt failed, this is
+  // exactly the state where retries need to keep happening regardless of that flag.
+  if (Object.keys(forceCloseQueue).length > 0) attemptForceCloses();
+
+  if (!isRunning) return;
+  checkDailyCircuitBreaker();
+  if (!isRunning) return; // may have just tripped
+  checkSessionWindowTransition();
+
+  // ---- Trade protection runs as soon as there's ANY data, independent of the full history
+  // requirement below. Adding a missing SL/TP, or managing breakeven/trailing on an already-open
+  // trade, only needs an ATR reading — it has nothing to do with the slow EMA needing 38 bars of
+  // history before the trend-signal logic further down can run. Gating protection behind that
+  // requirement was a real bug: a freshly re-adopted manual trade could sit completely unprotected
+  // for as long as this instrument/timeframe took to accumulate enough bars for the full strategy.
+  var earlyAtrV = getCurrentProtectionAtr();
+  if (earlyAtrV) {
+    applyMissingInitialRisk(earlyAtrV);
+    manageOpenTrades(earlyAtrV);
+  }
+
+  // ---- Auto Trading off: everything above this line already ran — a missing stop-loss/take-
+  // profit still gets added to a manual trade, breakeven and trailing still manage it, and the
+  // Daily circuit breaker still protects it. This just stops any NEW trade from being opened —
+  // none of the strategy signal logic below even runs. This is the entire feature: nothing about
+  // trade management changes, only whether the bot is allowed to open something new itself.
+  if (!cfg.autoTradingOn) return;
+
+  // ---- One Candlestick runs entirely through its own dedicated M1/H1/H4 handlers (see
+  // onOcM1Bar/onOcH1Bar/onOcH4Bar) — nothing about its entry logic lives here. This bar-close
+  // handler is still requested for this strategy purely so the unconditional protection block
+  // above keeps running as a redundant safety net alongside the real-time one in
+  // OnAccountMetrics; there is nothing else for it to do once that's already happened.
+  if (cfg.strategy === "onecandle") return;
+
+  // ---- FVG strategy runs on a much lighter data requirement (needs 4 bars, not 38) — handled
+  // entirely separately from the Original strategy's EMA-based signal logic below, which only
+  // ever runs when cfg.strategy === "original". Nothing here touches Original's variables, and
+  // nothing below touches these.
+  if (cfg.strategy === "fvg") {
+    if (tradingStore.length < 5) {
+      log("Waiting for history: " + tradingStore.length + "/5 bars loaded for " + cfg.instrumentId + " (FVG needs very little history to start).", "log-warn");
+      return;
+    }
+    var fvgCandle = tradingStore.GetCandle(1);
+    if (!fvgCandle) return;
+    var fvgAtr = tradingStore.ta[3].GetValue(1) || (fvgCandle.h - fvgCandle.l);
+    if (!fvgAtr || fvgAtr <= 0) return;
+
+    scanForNewFVG(tradingStore, fvgAtr);
+    var fvgResult = updateAndCheckFVGs(fvgCandle);
+    var fvgPivotLevels = getPivotLevels();
+    var fvgClose = fvgCandle.c;
+    var fvgPosition = Framework.Positions.getOrEmpty(cfg.instrumentId);
+
+    if (fvgPosition.positionType === FXB.PositionTypes.EMPTY) {
+      addOnsUsed.buy = 0; addOnsUsed.sell = 0;
+    }
+
+    Object.keys(barsSinceLastEntry).forEach(function (k) { barsSinceLastEntry[k]++; });
+
+    if (fvgResult.triggeredBuy) {
+      var fvgBuyRoomOk = hasRoomToNextLevel("buy", fvgClose, fvgPivotLevels, fvgAtr);
+      if (!fvgBuyRoomOk) {
+        log("FVG bullish gap-fill reaction triggered but skipped — too little room before the nearest resistance level.", "log-warn");
+      } else if (fvgPosition.positionType !== FXB.PositionTypes.SHORT && barsSinceLastEntry.buy > cfg.cooldownBars) {
+        var fvgSlBuf = (cfg.fvgStopBufferAtrMult || 0) * fvgAtr;
+        var fvgSlPrice = fvgResult.triggeredBuy.bottom - fvgSlBuf;
+        var fvgStopDist = fvgClose - fvgSlPrice;
+        var fvgTpBuy = cfg.useLevelTP ? nearestStructuralTP("buy", fvgClose, fvgPivotLevels, structuralTPMaxDistance(fvgAtr)) : null;
+        var fvgIsAdd = fvgPosition.positionType === FXB.PositionTypes.LONG;
+        var fvgReason = "FVG bullish gap-fill reaction [" + fvgResult.triggeredBuy.bottom.toFixed(5) + "–" + fvgResult.triggeredBuy.top.toFixed(5) + "]";
+        if (!fvgIsAdd) {
+          placeOrder("buy", computeLotSize(cfg.baseLots, cfg.baseRiskPct, fvgAtr, fvgStopDist), fvgReason, fvgAtr, fvgTpBuy, fvgClose, fvgSlPrice);
+          barsSinceLastEntry.buy = 0;
+        } else if (cfg.enableAddOns && addOnsUsed.buy < cfg.maxAddOns) {
+          placeOrder("buy", computeLotSize(cfg.addOnLots, cfg.addOnRiskPct, fvgAtr, fvgStopDist), "add-on, " + fvgReason, fvgAtr, fvgTpBuy, fvgClose, fvgSlPrice);
+          addOnsUsed.buy++; barsSinceLastEntry.buy = 0;
+        } else {
+          log("FVG buy trigger fired but ignored — already long and add-on cap (" + cfg.maxAddOns + ") reached or add-ons disabled", "log-warn");
+        }
+      } else {
+        log("FVG bullish gap-fill reaction ignored — existing short position open on " + cfg.instrumentId, "log-warn");
+      }
+    }
+
+    if (fvgResult.triggeredSell) {
+      var fvgSellRoomOk = hasRoomToNextLevel("sell", fvgClose, fvgPivotLevels, fvgAtr);
+      if (!fvgSellRoomOk) {
+        log("FVG bearish gap-fill reaction triggered but skipped — too little room before the nearest support level.", "log-warn");
+      } else if (fvgPosition.positionType !== FXB.PositionTypes.LONG && barsSinceLastEntry.sell > cfg.cooldownBars) {
+        var fvgSlBufS = (cfg.fvgStopBufferAtrMult || 0) * fvgAtr;
+        var fvgSlPriceS = fvgResult.triggeredSell.top + fvgSlBufS;
+        var fvgStopDistS = fvgSlPriceS - fvgClose;
+        var fvgTpSell = cfg.useLevelTP ? nearestStructuralTP("sell", fvgClose, fvgPivotLevels, structuralTPMaxDistance(fvgAtr)) : null;
+        var fvgIsAddS = fvgPosition.positionType === FXB.PositionTypes.SHORT;
+        var fvgReasonS = "FVG bearish gap-fill reaction [" + fvgResult.triggeredSell.bottom.toFixed(5) + "–" + fvgResult.triggeredSell.top.toFixed(5) + "]";
+        if (!fvgIsAddS) {
+          placeOrder("sell", computeLotSize(cfg.baseLots, cfg.baseRiskPct, fvgAtr, fvgStopDistS), fvgReasonS, fvgAtr, fvgTpSell, fvgClose, fvgSlPriceS);
+          barsSinceLastEntry.sell = 0;
+        } else if (cfg.enableAddOns && addOnsUsed.sell < cfg.maxAddOns) {
+          placeOrder("sell", computeLotSize(cfg.addOnLots, cfg.addOnRiskPct, fvgAtr, fvgStopDistS), "add-on, " + fvgReasonS, fvgAtr, fvgTpSell, fvgClose, fvgSlPriceS);
+          addOnsUsed.sell++; barsSinceLastEntry.sell = 0;
+        } else {
+          log("FVG sell trigger fired but ignored — already short and add-on cap (" + cfg.maxAddOns + ") reached or add-ons disabled", "log-warn");
+        }
+      } else {
+        log("FVG bearish gap-fill reaction ignored — existing long position open on " + cfg.instrumentId, "log-warn");
+      }
+    }
+
+    return; // FVG strategy handled everything for this bar — do not fall through to Original's logic below
+  }
+
+  // ---- Supply & Demand strategy — same lightweight data requirement as FVG (needs enough
+  // bars for a base + breakout, not 38), handled entirely separately from both other strategies.
+  if (cfg.strategy === "sd") {
+    if (tradingStore.length < (cfg.sdMaxBaseCandles || 3) + 3) {
+      log("Waiting for history: " + tradingStore.length + "/" + ((cfg.sdMaxBaseCandles || 3) + 3) + " bars loaded for " + cfg.instrumentId + " (Supply & Demand needs a little history to start).", "log-warn");
+      return;
+    }
+    var sdCandle = tradingStore.GetCandle(1);
+    if (!sdCandle) return;
+    var sdAtr = tradingStore.ta[3].GetValue(1) || (sdCandle.h - sdCandle.l);
+    if (!sdAtr || sdAtr <= 0) return;
+
+    scanForNewSDZone(tradingStore, sdAtr);
+    var sdResult = updateAndCheckSDZones(sdCandle);
+    var sdPivotLevels = getPivotLevels();
+    var sdClose = sdCandle.c;
+    var sdPosition = Framework.Positions.getOrEmpty(cfg.instrumentId);
+
+    if (sdPosition.positionType === FXB.PositionTypes.EMPTY) {
+      addOnsUsed.buy = 0; addOnsUsed.sell = 0;
+    }
+
+    Object.keys(barsSinceLastEntry).forEach(function (k) { barsSinceLastEntry[k]++; });
+
+    if (sdResult.triggeredBuy) {
+      var sdBuyRoomOk = hasRoomToNextLevel("buy", sdClose, sdPivotLevels, sdAtr);
+      if (!sdBuyRoomOk) {
+        log("Demand zone reaction triggered but skipped — too little room before the nearest resistance level.", "log-warn");
+      } else if (sdPosition.positionType !== FXB.PositionTypes.SHORT && barsSinceLastEntry.buy > cfg.cooldownBars) {
+        var sdSlBuf = (cfg.sdStopBufferAtrMult || 0) * sdAtr;
+        var sdSlPrice = sdResult.triggeredBuy.bottom - sdSlBuf;
+        var sdStopDist = sdClose - sdSlPrice;
+        var sdTpBuy = cfg.useLevelTP ? nearestStructuralTP("buy", sdClose, sdPivotLevels, structuralTPMaxDistance(sdAtr)) : null;
+        var sdIsAdd = sdPosition.positionType === FXB.PositionTypes.LONG;
+        var sdReason = "demand zone reaction [" + sdResult.triggeredBuy.bottom.toFixed(5) + "–" + sdResult.triggeredBuy.top.toFixed(5) + ", test #" + sdResult.triggeredBuy.timesTested + "]";
+        if (!sdIsAdd) {
+          placeOrder("buy", computeLotSize(cfg.baseLots, cfg.baseRiskPct, sdAtr, sdStopDist), sdReason, sdAtr, sdTpBuy, sdClose, sdSlPrice);
+          barsSinceLastEntry.buy = 0;
+        } else if (cfg.enableAddOns && addOnsUsed.buy < cfg.maxAddOns) {
+          placeOrder("buy", computeLotSize(cfg.addOnLots, cfg.addOnRiskPct, sdAtr, sdStopDist), "add-on, " + sdReason, sdAtr, sdTpBuy, sdClose, sdSlPrice);
+          addOnsUsed.buy++; barsSinceLastEntry.buy = 0;
+        } else {
+          log("Demand zone trigger fired but ignored — already long and add-on cap (" + cfg.maxAddOns + ") reached or add-ons disabled", "log-warn");
+        }
+      } else {
+        log("Demand zone reaction ignored — existing short position open on " + cfg.instrumentId, "log-warn");
+      }
+    }
+
+    if (sdResult.triggeredSell) {
+      var sdSellRoomOk = hasRoomToNextLevel("sell", sdClose, sdPivotLevels, sdAtr);
+      if (!sdSellRoomOk) {
+        log("Supply zone reaction triggered but skipped — too little room before the nearest support level.", "log-warn");
+      } else if (sdPosition.positionType !== FXB.PositionTypes.LONG && barsSinceLastEntry.sell > cfg.cooldownBars) {
+        var sdSlBufS = (cfg.sdStopBufferAtrMult || 0) * sdAtr;
+        var sdSlPriceS = sdResult.triggeredSell.top + sdSlBufS;
+        var sdStopDistS = sdSlPriceS - sdClose;
+        var sdTpSell = cfg.useLevelTP ? nearestStructuralTP("sell", sdClose, sdPivotLevels, structuralTPMaxDistance(sdAtr)) : null;
+        var sdIsAddS = sdPosition.positionType === FXB.PositionTypes.SHORT;
+        var sdReasonS = "supply zone reaction [" + sdResult.triggeredSell.bottom.toFixed(5) + "–" + sdResult.triggeredSell.top.toFixed(5) + ", test #" + sdResult.triggeredSell.timesTested + "]";
+        if (!sdIsAddS) {
+          placeOrder("sell", computeLotSize(cfg.baseLots, cfg.baseRiskPct, sdAtr, sdStopDistS), sdReasonS, sdAtr, sdTpSell, sdClose, sdSlPriceS);
+          barsSinceLastEntry.sell = 0;
+        } else if (cfg.enableAddOns && addOnsUsed.sell < cfg.maxAddOns) {
+          placeOrder("sell", computeLotSize(cfg.addOnLots, cfg.addOnRiskPct, sdAtr, sdStopDistS), "add-on, " + sdReasonS, sdAtr, sdTpSell, sdClose, sdSlPriceS);
+          addOnsUsed.sell++; barsSinceLastEntry.sell = 0;
+        } else {
+          log("Supply zone trigger fired but ignored — already short and add-on cap (" + cfg.maxAddOns + ") reached or add-ons disabled", "log-warn");
+        }
+      } else {
+        log("Supply zone reaction ignored — existing long position open on " + cfg.instrumentId, "log-warn");
+      }
+    }
+
+    return; // Supply & Demand handled everything for this bar — do not fall through to Original's logic below
+  }
+
+  // ---- 20/200 Trend strategy — a plain, widely-used combo: the 200 EMA is a pure regime filter
+  // (which side of it is price on, nothing more — it never needs to be touched or retested), and
+  // the 20 EMA is the only line doing entry timing (price has to have already broken through it,
+  // then pull back and hold on a retest). Entirely separate from Original/Break & Retest's 3-EMA
+  // stack, but shares the same downstream sizing, SL/TP, Auto Trailing, Daily circuit breaker,
+  // hard lot cap, structural-level room filter and TP targeting as everything else.
+  if (cfg.strategy === "trend2020") {
+    var t2020Fast = tradingStore.ta[4], t2020Trend = tradingStore.ta[5];
+    var t2020EmaNow = t2020Fast.GetValue(1), t2020EmaPrev = t2020Fast.GetValue(2);
+    var t2020TrendEmaV = t2020Trend.GetValue(1);
+    var t2020Candle = tradingStore.GetCandle(1), t2020PrevCandle = tradingStore.GetCandle(2);
+    if (!t2020EmaNow || !t2020EmaPrev || !t2020TrendEmaV || !t2020Candle || !t2020PrevCandle) return;
+    var t2020Atr = tradingStore.ta[3].GetValue(1);
+    if (!t2020Atr) return;
+    var t2020C = t2020Candle.c, t2020O = t2020Candle.o, t2020L = t2020Candle.l, t2020H = t2020Candle.h;
+    var t2020Tol = (cfg.t2020RetestTolerancePct || 0.3) / 100;
+    var t2020PivotLevels = getPivotLevels();
+
+    var t2020UpTrend = t2020C > t2020TrendEmaV;
+    var t2020DownTrend = t2020C < t2020TrendEmaV;
+
+    // Buy: price above the 200 (uptrend context), the 20 was already broken above on a prior bar,
+    // and this bar dipped back to retest it and held, closing back above — the 20 now acting as
+    // support. Sell is the exact mirror image, below the 200.
+    var t2020BuySignal = t2020UpTrend && t2020PrevCandle.c > t2020EmaPrev &&
+        t2020L <= t2020EmaNow * (1 + t2020Tol) && t2020C > t2020EmaNow && t2020C > t2020O;
+    var t2020SellSignal = t2020DownTrend && t2020PrevCandle.c < t2020EmaPrev &&
+        t2020H >= t2020EmaNow * (1 - t2020Tol) && t2020C < t2020EmaNow && t2020C < t2020O;
+
+    var t2020Position = Framework.Positions.getOrEmpty(cfg.instrumentId);
+    if (t2020Position.positionType === FXB.PositionTypes.EMPTY) { addOnsUsed.buy = 0; addOnsUsed.sell = 0; }
+
+    var t2020SlDist = t2020Atr * (cfg.slAtrMult || 2.0);
+    var t2020SlBuy = t2020SlDist > 0 ? t2020C - t2020SlDist : null;
+    var t2020SlSell = t2020SlDist > 0 ? t2020C + t2020SlDist : null;
+
+    if (t2020BuySignal && barsSinceLastEntry.buy > cfg.cooldownBars) {
+      var t2020BuyRoomOk = hasRoomToNextLevel("buy", t2020C, t2020PivotLevels, t2020Atr);
+      if (!t2020BuyRoomOk) {
+        log("20/200 Trend buy signal skipped — too little room before the nearest resistance level.", "log-warn");
+      } else if (t2020Position.positionType !== FXB.PositionTypes.SHORT) {
+        var t2020TpBuy = cfg.useLevelTP ? nearestStructuralTP("buy", t2020C, t2020PivotLevels, structuralTPMaxDistance(t2020Atr)) : null;
+        var t2020IsAddBuy = t2020Position.positionType === FXB.PositionTypes.LONG;
+        if (!t2020IsAddBuy) {
+          placeOrder("buy", computeLotSize(cfg.baseLots, cfg.baseRiskPct, t2020Atr, t2020SlDist),
+              "20/200 Trend — above 200 EMA, retested and held the 20 EMA", t2020Atr, t2020TpBuy, t2020C, t2020SlBuy);
+          barsSinceLastEntry.buy = 0;
+        } else if (cfg.enableAddOns && addOnsUsed.buy < cfg.maxAddOns) {
+          placeOrder("buy", computeLotSize(cfg.addOnLots, cfg.addOnRiskPct, t2020Atr, t2020SlDist),
+              "20/200 Trend add-on — fresh retest of the 20 EMA while still in an uptrend", t2020Atr, t2020TpBuy, t2020C, t2020SlBuy);
+          addOnsUsed.buy++; barsSinceLastEntry.buy = 0;
+        } else {
+          log("20/200 Trend buy signal fired but ignored — already long and add-on cap (" + cfg.maxAddOns + ") reached or add-ons disabled", "log-warn");
+        }
+      } else {
+        log("20/200 Trend buy signal ignored — existing short position open on " + cfg.instrumentId, "log-warn");
+      }
+    }
+
+    if (t2020SellSignal && barsSinceLastEntry.sell > cfg.cooldownBars) {
+      var t2020SellRoomOk = hasRoomToNextLevel("sell", t2020C, t2020PivotLevels, t2020Atr);
+      if (!t2020SellRoomOk) {
+        log("20/200 Trend sell signal skipped — too little room before the nearest support level.", "log-warn");
+      } else if (t2020Position.positionType !== FXB.PositionTypes.LONG) {
+        var t2020TpSell = cfg.useLevelTP ? nearestStructuralTP("sell", t2020C, t2020PivotLevels, structuralTPMaxDistance(t2020Atr)) : null;
+        var t2020IsAddSell = t2020Position.positionType === FXB.PositionTypes.SHORT;
+        if (!t2020IsAddSell) {
+          placeOrder("sell", computeLotSize(cfg.baseLots, cfg.baseRiskPct, t2020Atr, t2020SlDist),
+              "20/200 Trend — below 200 EMA, retested and held the 20 EMA", t2020Atr, t2020TpSell, t2020C, t2020SlSell);
+          barsSinceLastEntry.sell = 0;
+        } else if (cfg.enableAddOns && addOnsUsed.sell < cfg.maxAddOns) {
+          placeOrder("sell", computeLotSize(cfg.addOnLots, cfg.addOnRiskPct, t2020Atr, t2020SlDist),
+              "20/200 Trend add-on — fresh retest of the 20 EMA while still in a downtrend", t2020Atr, t2020TpSell, t2020C, t2020SlSell);
+          addOnsUsed.sell++; barsSinceLastEntry.sell = 0;
+        } else {
+          log("20/200 Trend sell signal fired but ignored — already short and add-on cap (" + cfg.maxAddOns + ") reached or add-ons disabled", "log-warn");
+        }
+      } else {
+        log("20/200 Trend sell signal ignored — existing long position open on " + cfg.instrumentId, "log-warn");
+      }
+    }
+
+    return; // 20/200 Trend handled everything for this bar — do not fall through to Original's logic below
+  }
+
+  // ==================== Everything below here is Original / Break & Retest ====================
+  // Shared code path for both — Break & Retest simply requires the level-retest condition further
+  // down before an entry is eligible, everything else about the logic is identical. Only reachable
+  // when cfg.strategy is "original" or "breakretest" (the FVG, S&D and One Candlestick branches
+  // above always return first).
+
+  if (tradingStore.length < cfg.slowLen + 4) {
+    log("Waiting for history: " + tradingStore.length + "/" + (cfg.slowLen + 4) + " bars loaded for " + cfg.instrumentId +
+        ". If this never advances, the Instrument field likely doesn't exactly match this broker's symbol name.", "log-warn");
+    return; // not enough history for new-signal generation yet — trade protection above already ran regardless
+  }
+
+  var emaFast = tradingStore.ta[0];
+  var emaMid  = tradingStore.ta[1];
+  var emaSlow = tradingStore.ta[2];
+  var atr     = tradingStore.ta[3];
+
+  var candle = tradingStore.GetCandle(1);
+  if (!candle) return;
+  var o = candle.o, h = candle.h, l = candle.l, c = candle.c;
+  var range = h - l;
+  if (range <= 0) return;
+
+  var fast = emaFast.GetValue(1), mid = emaMid.GetValue(1), slow = emaSlow.GetValue(1);
+  var fast2 = emaFast.GetValue(3), mid2 = emaMid.GetValue(3), slow2 = emaSlow.GetValue(3);
+  var atrV = atr.GetValue(1) || range;
+  if (!fast || !mid || !slow || !fast2 || !mid2 || !slow2) return;
+
+  // Computed once per bar — both SL and TP scale by the same factor, so the reward-to-risk
+  // ratio set by the base Stop-loss/Take-profit values never quietly changes, only their size.
+  var volMult = getVolatilityAdjustedMultipliers(atrV, c);
+  if (cfg.volAdjustOn && Math.abs(volMult.factor - 1) > 0.03) {
+    log("Volatility-adjusted: SL " + cfg.slAtrMult.toFixed(2) + "→" + volMult.sl.toFixed(2) + "×ATR, TP " +
+        cfg.tpAtrMult.toFixed(2) + "→" + volMult.tp.toFixed(2) + "×ATR (relative volatility " +
+        volMult.relVol.toFixed(3) + "% of price)", "log-info");
+  }
+  // Reused by every Original-strategy entry below (base, add-on, retest, level-retest)
+  // so every one of them uses the exact same volatility-adjusted stop distance — both for the
+  // actual stop-loss price AND for risk-sizing, so the two can never drift apart from each other.
+  var slDistOrig = (cfg.addStopLoss && volMult.sl > 0) ? atrV * volMult.sl : 0;
+  var slBuyPriceOrig = slDistOrig > 0 ? c - slDistOrig : null;
+  var slSellPriceOrig = slDistOrig > 0 ? c + slDistOrig : null;
+
+  var bullStack = fast > mid && mid > slow;
+  var bearStack = fast < mid && mid < slow;
+  var bullTrend = bullStack && fast > fast2 && mid > mid2;
+  var bearTrend = bearStack && fast < fast2 && mid < mid2;
+
+  var pivotP = getPivotP();
+  var pivotLevels = getPivotLevels();
+  // When "require pivot-side agreement" is off, the pivot-side gate always passes — matching the
+  // raw Overkill Scalper indicator's frequency, which never filters by pivot at all. Pivot levels
+  // are still computed and still used for structural TP targets either way.
+  var aboveP = !cfg.requirePivotSide || (pivotP !== null && c > pivotP);
+  var belowP = !cfg.requirePivotSide || (pivotP !== null && c < pivotP);
+
+  // --- touched-mid check over the last 3 closed bars, like the Scalper ---
+  var touchedMidBull = false, touchedMidBear = false;
+  for (var k = 2; k <= 4; k++) {
+    var pc = tradingStore.GetCandle(k);
+    var pmid = emaMid.GetValue(k);
+    if (!pc || !pmid) continue;
+    if (pc.l <= pmid * 1.001) touchedMidBull = true;
+    if (pc.h >= pmid * 0.999) touchedMidBear = true;
+  }
+  var nearMidBull = l <= mid * 1.006 && c >= mid * 0.998;
+  var nearMidBear = h >= mid * 0.994 && c <= mid * 1.002;
+
+  var bullMomentum = c > o && (c - l) / range >= 0.45 && c > fast && range >= atrV * cfg.atrMult;
+  var bearMomentum = c < o && (h - c) / range >= 0.45 && c < fast && range >= atrV * cfg.atrMult;
+
+  var buySignal  = bullTrend && bullMomentum && (touchedMidBull || nearMidBull);
+  var sellSignal = bearTrend && bearMomentum && (touchedMidBear || nearMidBear);
+
+  // --- retest-of-trend-line (mid EMA) signal — lighter filter, no full momentum candle needed ---
+  var retestBuy  = bullTrend && l <= mid * 1.003 && c > mid && c > o;
+  var retestSell = bearTrend && h >= mid * 0.997 && c < mid && c < o;
+
+  // --- retest of a broken structural level (R1/S1/Fib382/Fib618/R2/S2) — classic breakout-retest ---
+  var levelRetestBuy = null, levelRetestSell = null;
+  if (pivotLevels) {
+    var prevCandle = tradingStore.GetCandle(2);
+    if (prevCandle && bullTrend) {
+      var resLadder = resistanceLadder(pivotLevels);
+      for (var ri = 0; ri < resLadder.length; ri++) {
+        var lvl = resLadder[ri];
+        // Bar 2 already closed above the level (confirmed breakout), this bar dipped back to
+        // retest it and held, closing back above — level now acting as support.
+        if (prevCandle.c > lvl && l <= lvl * 1.0015 && c > lvl) { levelRetestBuy = lvl; break; }
+      }
+    }
+    if (prevCandle && bearTrend) {
+      var supLadder = supportLadder(pivotLevels);
+      for (var si = 0; si < supLadder.length; si++) {
+        var lvlS = supLadder[si];
+        if (prevCandle.c < lvlS && h >= lvlS * 0.9985 && c < lvlS) { levelRetestSell = lvlS; break; }
+      }
+    }
+  }
+
+  // --- Original fires the primary entry on any qualifying trend candle. Break & Retest instead
+  // REQUIRES the level-retest condition above — a structural level must already be broken and
+  // holding as new support/resistance — before the primary entry is eligible at all, which is
+  // what stops an entry from ever being taken walking straight into a level that hasn't broken yet.
+  var isRetestStyle = cfg.strategy === "breakretest";
+  var buySignalFinal = isRetestStyle ? (bullTrend && levelRetestBuy !== null) : buySignal;
+  var sellSignalFinal = isRetestStyle ? (bearTrend && levelRetestSell !== null) : sellSignal;
+
+  // advance cooldown counters
+  Object.keys(barsSinceLastEntry).forEach(function(k) { barsSinceLastEntry[k]++; });
+
+  // Note: applyMissingInitialRisk() and manageOpenTrades() already ran earlier in this function,
+  // decoupled from the history gate above — trade protection shouldn't wait on signal-generation
+  // history requirements. No need to call them again here.
+
+  if (cfg.requirePivotSide && pivotP === null) {
+    log("Waiting for pivot data (" + cfg.instrumentId + ")...", "log-info");
+    return;
+  }
+
+  var position = Framework.Positions.getOrEmpty(cfg.instrumentId);
+  if (position.positionType === FXB.PositionTypes.LONG || position.positionType === FXB.PositionTypes.SHORT) {
+    // reset add-on counter for whichever side is now flat
+  } else if (position.positionType === FXB.PositionTypes.EMPTY) {
+    addOnsUsed.buy = 0; addOnsUsed.sell = 0;
+  }
+
+  var buyRoomOk = hasRoomToNextLevel("buy", c, pivotLevels, atrV);
+  var sellRoomOk = hasRoomToNextLevel("sell", c, pivotLevels, atrV);
+  var buyHtfOk = higherTimeframeAgrees("buy");
+  var sellHtfOk = higherTimeframeAgrees("sell");
+
+  // --- Primary BUY: uptrend + signal + above pivot ---
+  if (buySignalFinal && aboveP && barsSinceLastEntry.buy > cfg.cooldownBars) {
+    if (!buyRoomOk) {
+      log("Buy signal fired but skipped — too little room before the nearest resistance level (needs at least " +
+          (atrV * cfg.minRoomAtrMult).toFixed(5) + " away). Waiting for a cleaner setup.", "log-warn");
+    } else if (!buyHtfOk) {
+      log("Buy signal fired but skipped — the bigger-picture trend doesn't agree with this direction yet. Waiting for a cleaner setup.", "log-warn");
+    } else if (position.positionType !== FXB.PositionTypes.SHORT) {
+      var isAdd = position.positionType === FXB.PositionTypes.LONG;
+      var tpBuy = cfg.useLevelTP ? nearestStructuralTP("buy", c, pivotLevels, structuralTPMaxDistance(atrV, volMult.tp)) : null;
+      var pivotTxt = pivotP !== null ? pivotP.toFixed(5) : "n/a";
+      var buyReason = isRetestStyle ? "break & retest of " + levelRetestBuy.toFixed(5) + " as support, confirmed" : "uptrend signal above pivot P (" + pivotTxt + ")";
+      var buyAddReason = isRetestStyle ? "add-on, break & retest of " + levelRetestBuy.toFixed(5) + " as support" : "add-on, uptrend signal above pivot P";
+      if (!isAdd) {
+        placeOrder("buy", computeLotSize(cfg.baseLots, cfg.baseRiskPct, atrV, slDistOrig), buyReason, atrV, tpBuy, c, slBuyPriceOrig);
+        barsSinceLastEntry.buy = 0;
+      } else if (cfg.enableAddOns && addOnsUsed.buy < cfg.maxAddOns) {
+        placeOrder("buy", computeLotSize(cfg.addOnLots, cfg.addOnRiskPct, atrV, slDistOrig), buyAddReason, atrV, tpBuy, c, slBuyPriceOrig);
+        addOnsUsed.buy++; barsSinceLastEntry.buy = 0;
+      } else {
+        log("Buy signal fired but ignored — already long and add-on cap (" + cfg.maxAddOns + ") reached or add-ons disabled", "log-warn");
+      }
+    } else {
+      log("Buy signal ignored — existing short position open on " + cfg.instrumentId, "log-warn");
+    }
+  }
+
+  // --- Primary SELL: downtrend + signal + below pivot ---
+  if (sellSignalFinal && belowP && barsSinceLastEntry.sell > cfg.cooldownBars) {
+    if (!sellRoomOk) {
+      log("Sell signal fired but skipped — too little room before the nearest support level (needs at least " +
+          (atrV * cfg.minRoomAtrMult).toFixed(5) + " away). Waiting for a cleaner setup.", "log-warn");
+    } else if (!sellHtfOk) {
+      log("Sell signal fired but skipped — the bigger-picture trend doesn't agree with this direction yet. Waiting for a cleaner setup.", "log-warn");
+    } else if (position.positionType !== FXB.PositionTypes.LONG) {
+      var isAddS = position.positionType === FXB.PositionTypes.SHORT;
+      var tpSell = cfg.useLevelTP ? nearestStructuralTP("sell", c, pivotLevels, structuralTPMaxDistance(atrV, volMult.tp)) : null;
+      var pivotTxtS = pivotP !== null ? pivotP.toFixed(5) : "n/a";
+      var sellReason = isRetestStyle ? "break & retest of " + levelRetestSell.toFixed(5) + " as resistance, confirmed" : "downtrend signal below pivot P (" + pivotTxtS + ")";
+      var sellAddReason = isRetestStyle ? "add-on, break & retest of " + levelRetestSell.toFixed(5) + " as resistance" : "add-on, downtrend signal below pivot P";
+      if (!isAddS) {
+        placeOrder("sell", computeLotSize(cfg.baseLots, cfg.baseRiskPct, atrV, slDistOrig), sellReason, atrV, tpSell, c, slSellPriceOrig);
+        barsSinceLastEntry.sell = 0;
+      } else if (cfg.enableAddOns && addOnsUsed.sell < cfg.maxAddOns) {
+        placeOrder("sell", computeLotSize(cfg.addOnLots, cfg.addOnRiskPct, atrV, slDistOrig), sellAddReason, atrV, tpSell, c, slSellPriceOrig);
+        addOnsUsed.sell++; barsSinceLastEntry.sell = 0;
+      } else {
+        log("Sell signal fired but ignored — already short and add-on cap (" + cfg.maxAddOns + ") reached or add-ons disabled", "log-warn");
+      }
+    } else {
+      log("Sell signal ignored — existing long position open on " + cfg.instrumentId, "log-warn");
+    }
+  }
+
+  // --- Retest-of-trend-line entries ---
+  if (cfg.enableRetest) {
+    if (retestBuy && aboveP && buyRoomOk && buyHtfOk && barsSinceLastEntry.retestBuy > cfg.cooldownBars && position.positionType !== FXB.PositionTypes.SHORT) {
+      var tpRetestBuy = cfg.useLevelTP ? nearestStructuralTP("buy", c, pivotLevels, structuralTPMaxDistance(atrV, volMult.tp)) : null;
+      placeOrder("buy", computeLotSize(cfg.retestLots, cfg.retestRiskPct, atrV, slDistOrig), "retest of EMA" + cfg.midLen + " trend line, uptrend above pivot P", atrV, tpRetestBuy, c, slBuyPriceOrig);
+      barsSinceLastEntry.retestBuy = 0;
+    }
+    if (retestSell && belowP && sellRoomOk && sellHtfOk && barsSinceLastEntry.retestSell > cfg.cooldownBars && position.positionType !== FXB.PositionTypes.LONG) {
+      var tpRetestSell = cfg.useLevelTP ? nearestStructuralTP("sell", c, pivotLevels, structuralTPMaxDistance(atrV, volMult.tp)) : null;
+      placeOrder("sell", computeLotSize(cfg.retestLots, cfg.retestRiskPct, atrV, slDistOrig), "retest of EMA" + cfg.midLen + " trend line, downtrend below pivot P", atrV, tpRetestSell, c, slSellPriceOrig);
+      barsSinceLastEntry.retestSell = 0;
+    }
+  }
+
+  // --- Retest-of-structural-level entries (breakout-retest of R1/S1/Fib/R2/S2) ---
+  // Skipped entirely in Break & Retest entry style — that mode already uses this exact same
+  // levelRetestBuy/levelRetestSell condition as the PRIMARY entry above, so running this too
+  // would place a second, duplicate order off the same signal on the same bar.
+  if (cfg.enableLevelRetest && pivotLevels && !isRetestStyle) {
+    if (levelRetestBuy !== null && aboveP && buyRoomOk && buyHtfOk && barsSinceLastEntry.levelRetestBuy > cfg.cooldownBars && position.positionType !== FXB.PositionTypes.SHORT) {
+      var tpLevelBuy = cfg.useLevelTP ? nearestStructuralTP("buy", c, pivotLevels, structuralTPMaxDistance(atrV, volMult.tp)) : null;
+      placeOrder("buy", computeLotSize(cfg.levelRetestLots, cfg.levelRetestRiskPct, atrV, slDistOrig), "retest of broken level " + levelRetestBuy.toFixed(5) + " as support", atrV, tpLevelBuy, c, slBuyPriceOrig);
+      barsSinceLastEntry.levelRetestBuy = 0;
+    }
+    if (levelRetestSell !== null && belowP && sellRoomOk && sellHtfOk && barsSinceLastEntry.levelRetestSell > cfg.cooldownBars && position.positionType !== FXB.PositionTypes.LONG) {
+      var tpLevelSell = cfg.useLevelTP ? nearestStructuralTP("sell", c, pivotLevels, structuralTPMaxDistance(atrV, volMult.tp)) : null;
+      placeOrder("sell", computeLotSize(cfg.levelRetestLots, cfg.levelRetestRiskPct, atrV, slDistOrig), "retest of broken level " + levelRetestSell.toFixed(5) + " as resistance", atrV, tpLevelSell, c, slSellPriceOrig);
+      barsSinceLastEntry.levelRetestSell = 0;
+    }
+  }
+}
+
+// ---- Manual test buttons — bypass ALL strategy logic, just prove SendOrder works ----
+function testPlaceOrder(direction) {
+  var instrumentId = document.getElementById("instrumentId").value.trim();
+  if (!instrumentId) { log("Enter an instrument ID first (e.g. EUR/USD) before testing.", "log-warn"); return; }
+  var testLots = parseFloat(document.getElementById("testLots").value) || 0.01;
+
+  var req = {
+    instrumentId: instrumentId,
+    tradingAction: direction === "buy" ? FXB.OrderTypes.BUY : FXB.OrderTypes.SELL,
+    volume: { lots: testLots }
+  };
+
+  log("MANUAL TEST " + direction.toUpperCase() + " " + testLots + " lots " + instrumentId + " — bypassing strategy logic entirely", direction === "buy" ? "log-buy" : "log-sell");
+
+  // Always force the platform's own confirmation dialog for manual tests, regardless of
+  // the "Confirm every order" checkbox — this is a deliberate manual click, so you should
+  // always see the platform's prompt before it actually executes.
+  Framework.SendOrder(req, function (MsgResult) {
+    if (MsgResult && MsgResult.result && MsgResult.result.isOkay) {
+      log("Manual test order confirmed OK — SendOrder is correctly linked to this account.", "log-info");
+      beep(direction);
+    } else {
+      var errText = "unknown error";
+      try { errText = Framework.Translation.TranslateError(MsgResult.result); } catch (e) {}
+      log("Manual test order failed/cancelled: " + errText, "log-warn");
+    }
+  }, { confirm: true });
+}
+
+// ---- Start / Stop ---------------------------------------------------
+var startConfirmArmed = false;
+var startConfirmTimeout = null;
+
+function startBot() {
+  if (!startConfirmArmed) {
+    startConfirmArmed = true;
+    var startBtnEl = document.getElementById("startBtn");
+    startBtnEl.textContent = "⚠️ Click again to confirm — places REAL orders";
+    log("This starts placing real orders on this account. Click Start Bot again within 8 seconds to confirm.", "log-warn");
+    clearTimeout(startConfirmTimeout);
+    startConfirmTimeout = setTimeout(function () {
+      startConfirmArmed = false;
+      startBtnEl.textContent = "▶ Start Bot";
+    }, 8000);
+    return;
+  }
+  startConfirmArmed = false;
+  clearTimeout(startConfirmTimeout);
+  document.getElementById("startBtn").textContent = "▶ Start Bot";
+
+  cfg = readConfig();
+  if (!cfg.instrumentId) { log("Enter an instrument ID first (e.g. EUR/USD).", "log-warn"); return; }
+  if (!document.getElementById("strategySelect").value) { log("Select a Strategy first — this decides how the bot finds trades.", "log-warn"); return; }
+  if (!document.getElementById("accountSizeSelect").value) { log("Select your Account Size first — this sets your position sizing and risk limits.", "log-warn"); return; }
+  if (!document.getElementById("modeSelect").value) { log("Select a Mode first (Scalper or Swing) — this sets your timeframe and risk profile.", "log-warn"); return; }
+
+  // Catch a Mode/timeframe mismatch — e.g. Mode says "Swing" but the actual timeframe field
+  // (in Advanced) got manually changed or drifted from a previously-saved setting and still
+  // shows M5. The field itself always wins at runtime; this just makes sure that's never silent.
+  var expectedTf = MODE_PRESETS[cfg.mode] ? MODE_PRESETS[cfg.mode].timeframe : null;
+  if (expectedTf && cfg.timeframe !== expectedTf) {
+    var tfLabel = document.getElementById("timeframe").options[document.getElementById("timeframe").selectedIndex].text;
+    log("⚠️ Mode is set to \"" + cfg.mode + "\" but the actual Trading timeframe is " + tfLabel +
+        ", not what that Mode normally uses. Running on " + tfLabel + " anyway — the timeframe field always wins. " +
+        "Open Advanced to fix this if it wasn't intentional.", "log-warn");
+  }
+
+  var instr = Framework.Instruments.get(cfg.instrumentId);
+  if (!instr) log("Instrument not yet loaded yet — this will resolve itself once the platform loads it.", "log-warn");
+
+  // Everything visible — the Instrument field, the log, requests sent to the platform — always
+  // uses exactly what you typed (e.g. "US30", "EURUSD"), never a renamed/resolved version. This
+  // canonical value is computed silently, purely as an internal fallback for recognizing real
+  // order objects that come back using the platform's own naming — it's never shown or used
+  // anywhere else. Without it, a manual trade or an order on an instrument the platform names
+  // differently internally could go undetected for management purposes even though everything
+  // else (candles, pricing) already worked fine with what you typed.
+  cfg.canonicalInstrumentId = (instr && instr.instrumentId) ? instr.instrumentId : cfg.instrumentId;
+
+  barsSinceLastEntry = { buy: 999, sell: 999, retestBuy: 999, retestSell: 999, levelRetestBuy: 999, levelRetestSell: 999 };
+  addOnsUsed = { buy: 0, sell: 0 };
+  pendingManagement = [];
+  managedOrders = {};
+  activeFVGs = []; // fresh gap list every Start — stale gaps from a previous session/instrument aren't relevant
+  activeSDZones = []; // fresh zone list every Start, same reasoning
+  ocZones = [];
+  ocBatchGroups = {};
+  ocHourState = { hourKey: null, hourOpen: null, hourHigh: -Infinity, hourLow: Infinity };
+  ocLastBatchType = null;
+  ocLastBatchDirection = null;
+  ocLastBatchHourKey = null;
+  ocFlipsThisHour = 0;
+  ocStretchState = { active: false, direction: null, batchId: null, entriesFired: 0, extremeSoFar: null, hourKey: null };
+
+  log("Strategy: " + strategyDisplayName(cfg.strategy) + " selected.", "log-info");
+  if (!cfg.autoTradingOn) {
+    log("⚠️ Auto Trading is OFF — this bot will NOT open any new trades on its own. It will still add a missing stop-loss/take-profit, move to breakeven, and trail any trade you place manually, and the Daily circuit breaker still applies.", "log-warn");
+  }
+
+  // Re-adopt any already-open trades on this instrument — this is what stops a page reload or
+  // re-pasted update from silently orphaning a live trade. Without this, restarting the bot
+  // would lose all memory of an open position: it stays live on your broker with whatever SL/TP
+  // it already had, but never gets breakeven/trailing management again, because that tracking
+  // only ever lived in this browser tab's memory, not saved anywhere. This is very likely what
+  // happened to the trade that ran to +$3,000 and gave most of it back.
+  var reAdoptedCount = 0;
+  Framework.Orders.forEach(function (orderId, order) {
+    if (!order || !isBotInstrument(order.instrumentId)) return;
+    if (order.closeTime) return; // historic/closed, not currently open
+    if (order.orderType !== FXB.OrderTypes.BUY && order.orderType !== FXB.OrderTypes.SELL) return; // skip pending orders
+    if (managedOrders[order.orderId]) return; // already tracked
+
+    managedOrders[order.orderId] = {
+      direction: order.orderType === FXB.OrderTypes.BUY ? "buy" : "sell",
+      atrAtEntry: 0,
+      entryPrice: order.openPrice,
+      breakevenApplied: false,
+      lots: null,
+      dollarPerPriceUnit: null,
+      needsInitialRisk: true // if this trade has no SL/TP (e.g. a manual entry), one gets added on the next bar close
+    };
+    reAdoptedCount++;
+  });
+  if (reAdoptedCount > 0) {
+    log("Re-adopted " + reAdoptedCount + " already-open trade(s) on " + cfg.instrumentId +
+        " — any missing SL/TP will be added on the next bar close, then breakeven/trailing management begins.", "log-info");
+  }
+
+  entriesToday = 0;
+  entriesDayKey = currentDayKey();
+  circuitBreakerTripped = false;
+  dailyBreakerDayKey = currentDayKey();
+  sessionWindowWasInside = null;
+  warnedZeroTrailAfter = false;
+  warnedZeroLockDistance = false;
+
+  tradingStore = new FXB.CandleStore({
+    ta: [
+      new FXB.ta.EMA({ period: cfg.fastLen }),
+      new FXB.ta.EMA({ period: cfg.midLen }),
+      new FXB.ta.EMA({ period: cfg.slowLen }),
+      new FXB.ta.ATR({ period: 14 }),
+      // Indices 4/5: the 20/200 Trend strategy's own two EMAs. Appended after the existing four
+      // (rather than replacing any of them) so every other strategy's fixed ta[0..3] references
+      // keep working unchanged — these two are simply unused by every strategy except this one.
+      new FXB.ta.EMA({ period: cfg.t2020FastEma || 20 }),
+      new FXB.ta.EMA({ period: cfg.t2020TrendEma || 200 })
+    ],
+    OnNewCandle: onNewTradingBar
+  });
+
+  pivotStore = new FXB.CandleStore({});
+
+  // Higher-timeframe store for the trend-agreement filter — same EMA lengths as the main trend
+  // check, just computed on a genuinely bigger timeframe. Only requested when actually needed:
+  // Original or Break & Retest with the filter on. FVG and Supply & Demand never touch this at all.
+  htfStore = null;
+  cfg.htfTimeframe = HTF_PRESETS[cfg.mode] || 3600;
+  if ((cfg.strategy === "original" || cfg.strategy === "breakretest") && cfg.requireHtfAgreement) {
+    htfStore = new FXB.CandleStore({
+      ta: [
+        new FXB.ta.EMA({ period: cfg.fastLen }),
+        new FXB.ta.EMA({ period: cfg.midLen }),
+        new FXB.ta.EMA({ period: cfg.slowLen })
+      ]
+    });
+    Framework.RequestCandles({ instrumentId: cfg.instrumentId, timeframe: cfg.htfTimeframe }, htfStore);
+  }
+
+  // One Candlestick's own dedicated stores — M1 for the live entry trigger, H1 and H4 for zone
+  // detection, completely independent of Mode's own timeframe. Only requested when this
+  // strategy is actually selected; every other strategy leaves these untouched.
+  ocStoreM1 = null; ocStoreH1 = null; ocStoreH4 = null;
+  if (cfg.strategy === "onecandle") {
+    ocStoreH1 = new FXB.CandleStore({ ta: [new FXB.ta.ATR({ period: 14 })], OnNewCandle: onOcH1Bar });
+    ocStoreH4 = new FXB.CandleStore({ ta: [new FXB.ta.ATR({ period: 14 })], OnNewCandle: onOcH4Bar });
+    ocStoreM1 = new FXB.CandleStore({ ta: [new FXB.ta.ATR({ period: 14 })], OnNewCandle: onOcM1Bar });
+    Framework.RequestCandles({ instrumentId: cfg.instrumentId, timeframe: 3600 }, ocStoreH1);
+    Framework.RequestCandles({ instrumentId: cfg.instrumentId, timeframe: 14400 }, ocStoreH4);
+    Framework.RequestCandles({ instrumentId: cfg.instrumentId, timeframe: 60 }, ocStoreM1);
+  }
+
+  Framework.RequestCandles({ instrumentId: cfg.instrumentId, timeframe: cfg.timeframe }, tradingStore);
+  Framework.RequestCandles({ instrumentId: cfg.instrumentId, timeframe: cfg.pivotTf }, pivotStore);
+
+  isRunning = true;
+  setInputsDisabled(true);
+  setStatus(true);
+  log("Started on " + cfg.instrumentId + " — trading tf " + cfg.timeframe + "s, pivot tf " + cfg.pivotTf + "s", "log-info");
+  startHeartbeat();
+  startLogPersistence();
+
+  Framework.SaveCategorySettings(cfg);
+}
+
+function stopBot() {
+  isRunning = false;
+  setInputsDisabled(false);
+  setStatus(false);
+  stopHeartbeat();
+  stopLogPersistence();
+  log("Stopped. Existing open trades/pending orders are NOT closed automatically.", "log-warn");
+}
+
+// ---- Log persistence — rides on the same settings save already proven to work, rather than a
+// new/separate mechanism. Every 60 seconds while running, the last 60 log lines get saved
+// alongside your settings, so a frozen chart, a crash, or a reload doesn't erase the evidence
+// of what was actually happening right before it — exactly the gap that lost the heartbeat
+// history overnight. Restored automatically on the next load, clearly marked as from before
+// the reload so it's never confused with the current session's own lines.
+var logPersistInterval = null;
+function startLogPersistence() {
+  logPersistInterval = setInterval(function () {
+    if (!cfg) return;
+    cfg.logHistory = logHistoryBuffer;
+    Framework.SaveCategorySettings(cfg);
+  }, 60000);
+}
+function stopLogPersistence() {
+  if (logPersistInterval) { clearInterval(logPersistInterval); logPersistInterval = null; }
+}
+
+// ---- Heartbeat — a purely diagnostic feature, doesn't affect trading logic at all ----------
+// Browsers throttle or fully suspend JavaScript in background tabs, and laptops sleep — if that
+// happens, the bot doesn't crash or error, it just silently stops executing until the machine/tab
+// wakes back up, which can look exactly like "ran overnight, never traded" even during an active
+// session. This logs a heartbeat every 10 minutes and specifically detects if the gap since the
+// last one was much longer than expected — that's direct proof of exactly that happening, instead
+// of leaving it as a guess.
+var heartbeatInterval = null;
+var lastHeartbeatAt = null;
+var HEARTBEAT_INTERVAL_MS = 600000; // 10 minutes
+
+function startHeartbeat() {
+  lastHeartbeatAt = Date.now();
+  heartbeatInterval = setInterval(function () {
+    var now = Date.now();
+    var gapMin = (now - lastHeartbeatAt) / 60000;
+    if (gapMin > 15) {
+      log("⏰ Resumed after being inactive for ~" + gapMin.toFixed(0) + " minute(s) — the browser tab or computer was very likely asleep or backgrounded during that gap, not the bot failing to trade. Keep the tab active/foreground, or disable sleep mode, to run this reliably unattended.", "log-warn");
+    } else {
+      log("💓 Still running" + (cfg && !cfg.autoTradingOn ? " (Manual mode)" : "") + " — watching " + (cfg ? cfg.instrumentId : "") + ". " + getCurrentTrendSummary(), "log-info");
+    }
+    lastHeartbeatAt = now;
+  }, HEARTBEAT_INTERVAL_MS);
+}
+function stopHeartbeat() {
+  if (heartbeatInterval) { clearInterval(heartbeatInterval); heartbeatInterval = null; }
+}
+
+// Reads the bot's own current state directly from the live candle store and describes it in
+// plain language — grounded in whichever strategy is actually selected, not a generic guess.
+function getCurrentTrendSummary() {
+  if (!cfg || !tradingStore) return "Still loading price history.";
+
+  if (cfg.strategy === "fvg") {
+    if (tradingStore.length < 5) return "Still loading price history.";
+    return activeFVGs.length + " active gap(s) being watched for a retest.";
+  }
+
+  if (cfg.strategy === "sd") {
+    if (tradingStore.length < (cfg.sdMaxBaseCandles || 3) + 3) return "Still loading price history.";
+    return activeSDZones.length + " active zone(s) being watched for a retest.";
+  }
+
+  if (cfg.strategy === "onecandle") {
+    var proven = ocZones.filter(function (z) { return z.touches >= (cfg.ocMinTouches || 2); }).length;
+    return proven + " proven zone(s) watched (" + ocZones.length + " total tracked, H1+H4).";
+  }
+
+  if (cfg.strategy === "trend2020") {
+    if (tradingStore.length < (cfg.t2020TrendEma || 200) + 4) return "Still loading price history.";
+    var t2020C = tradingStore.GetCandle(1);
+    var t2020FastV = tradingStore.ta[4].GetValue(1), t2020TrendV = tradingStore.ta[5].GetValue(1);
+    if (!t2020C || !t2020FastV || !t2020TrendV) return "Still loading price history.";
+    if (t2020C.c > t2020TrendV) return "Above the 200 EMA (uptrend) — waiting for a retest of the 20 EMA to hold.";
+    if (t2020C.c < t2020TrendV) return "Below the 200 EMA (downtrend) — waiting for a retest of the 20 EMA to hold.";
+    return "Sitting right on the 200 EMA — no clear regime yet.";
+  }
+
+  if (tradingStore.length < cfg.slowLen + 4) return "Still loading price history.";
+  var emaFast = tradingStore.ta[0], emaMid = tradingStore.ta[1], emaSlow = tradingStore.ta[2];
+  var fast = emaFast.GetValue(1), mid = emaMid.GetValue(1), slow = emaSlow.GetValue(1);
+  var fast2 = emaFast.GetValue(3), mid2 = emaMid.GetValue(3), slow2 = emaSlow.GetValue(3);
+  if (!fast || !mid || !slow || !fast2 || !mid2 || !slow2) return "Still loading price history.";
+
+  var bullStack = fast > mid && mid > slow;
+  var bearStack = fast < mid && mid < slow;
+  var bullTrend = bullStack && fast > fast2 && mid > mid2;
+  var bearTrend = bearStack && fast < fast2 && mid < mid2;
+
+  var waitingFor = cfg.strategy === "breakretest" ? "a broken level to retest and hold" : "a momentum candle + retest";
+  if (bullTrend) return "Uptrend confirmed — waiting for " + waitingFor + ".";
+  if (bearTrend) return "Downtrend confirmed — waiting for " + waitingFor + ".";
+  if (bullStack || bearStack) return "Trend forming but not confirmed yet.";
+  return "No clear trend right now — market looks choppy/ranging.";
+}
+
+// ---- Wire-up ---------------------------------------------------------
+Framework.OnGetState = function () {
+  // Tells the platform to keep this widget running (and reload it automatically)
+  // even when you switch charts, change the instrument, or navigate elsewhere.
+  // Without this, the framework unloads the widget on every navigation — which is
+  // exactly the "window disappears" behaviour we're fixing here.
+  return { mustRemain: true };
+};
+
+Framework.OnLoad = function () {
+  // Best-effort: relabel the dollar-denominated fields with the account's real deposit currency
+  // if the platform exposes one. Falls back to "$" silently if it doesn't — never breaks either way.
+  try {
+    var curr = Framework.Account && Framework.Account.currency;
+    if (curr && curr !== "USD") {
+      document.querySelectorAll("label").forEach(function (lbl) {
+        if (lbl.textContent.indexOf("($)") !== -1) lbl.textContent = lbl.textContent.replace("($)", "(" + curr + ")");
+      });
+    }
+  } catch (e) {}
+
+  Framework.LoadCategorySettings(SETTINGS_ID, function (settings) {
+    var isFreshInstall = !settings;
+    settings = settings || {};
+    if (!settings.instrumentId && Framework.Account && Framework.Account.defaultInstrumentId) {
+      settings.instrumentId = Framework.Account.defaultInstrumentId;
+    }
+    applyConfigToUI(settings);
+    // Only seed the Mode preset on a genuinely fresh install — a returning user's saved
+    // advanced-field values (including any manual tweaks) were already restored above by
+    // applyConfigToUI, and re-applying the preset here would silently overwrite them.
+    if (isFreshInstall) applyModePreset(document.getElementById("modeSelect").value);
+    setStatus(false);
+
+    if (settings.logHistory && settings.logHistory.length > 0) {
+      log("───── Restored log from before last reload (may be up to 60s stale) ─────", "log-warn");
+      settings.logHistory.forEach(function (entry) {
+        var el = document.getElementById("log");
+        var line = document.createElement("div");
+        if (entry.cls) line.className = entry.cls;
+        line.textContent = "[" + entry.ts + "] " + entry.msg;
+        el.appendChild(line);
+        el.scrollTop = el.scrollHeight;
+      });
+      log("───── New session begins below ─────", "log-warn");
+    }
+
+    log("Ready. Review settings, then press Start Bot.", "log-info");
+  });
+
+  document.getElementById("startBtn").addEventListener("click", startBot);
+  document.getElementById("stopBtn").addEventListener("click", stopBot);
+  document.getElementById("testBuyBtn").addEventListener("click", function () { testPlaceOrder("buy"); });
+  document.getElementById("testSellBtn").addEventListener("click", function () { testPlaceOrder("sell"); });
+  document.getElementById("clearLogBtn").addEventListener("click", function () {
+    document.getElementById("log").innerHTML = "";
+  });
+  document.getElementById("exportCsvBtn").addEventListener("click", exportTradeLogCsv);
+  document.getElementById("resetStatsBtn").addEventListener("click", function () {
+    tradeLog = [];
+    refreshStatsDisplay();
+    log("Performance stats reset.", "log-info");
+  });
+  document.getElementById("minimizeBtn").addEventListener("click", function () {
+    var min = document.body.classList.toggle("minimized");
+    this.textContent = min ? "▢" : "▁";
+    this.title = min ? "Restore" : "Minimize";
+  });
+  document.getElementById("advancedToggle").addEventListener("click", function () {
+    var section = document.getElementById("advancedSection");
+    var expanded = section.classList.toggle("expanded");
+    this.textContent = expanded ? "▾ Hide advanced settings" : "▸ Show advanced settings";
+  });
+  document.getElementById("modeSelect").addEventListener("change", function () {
+    applyModePreset(this.value);
+    log("Mode set to " + this.value + " — timeframe, stops, and targets updated automatically.", "log-info");
+  });
+  document.getElementById("accountSizeSelect").addEventListener("change", function () {
+    applyAccountSizePreset(this.value);
+    log("Account size set to " + this.value + " — position sizing, daily limits, and trailing amounts updated automatically.", "log-info");
+  });
+  document.getElementById("strategySelect").addEventListener("change", function () {
+    log("Strategy set to " + strategyDisplayName(this.value) + ".", "log-info");
+    updateStrategyFieldVisibility();
+  });
+  updateStrategyFieldVisibility(); // run once on load so a saved/restored strategy immediately shows only its own settings
+  document.getElementById("volSensitivity").addEventListener("change", function () {
+    applyVolSensitivityPreset(this.value);
+    log("Volatility sensitivity set to " + this.value + ".", "log-info");
+  });
+  document.getElementById("volCustomToggle").addEventListener("change", function () {
+    document.getElementById("volCustomFields").style.display = this.checked ? "block" : "none";
+  });
+};
+
+Framework.OnMessage = function (Msg) {
+  if (!Msg) return;
+  if (Msg.is(FXB.MessageTypes.CATEGORY_SETTINGS_CHANGE)) {
+    // another instance changed saved settings — no action needed while running
+  }
+};
+</script>
+</body>
+</html>
