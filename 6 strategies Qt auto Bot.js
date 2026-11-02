@@ -252,6 +252,9 @@ button:active { transform: scale(0.98); }
         <option value="off">OFF — manage my manual trades only</option>
       </select>
     </div>
+    <small class="hint">You can flip this while the bot is running &mdash; it takes effect immediately, no Apply needed. OFF = no new entries, but trailing, breakeven and the safety backstops keep working on open trades.</small>
+    <div class="row"><label>Auto-resume after page reload</label><input type="checkbox" id="autoResumeOn" checked></div>
+    <small class="hint">ON (default): if the page is refreshed or reloaded while the bot was running, it restarts itself automatically (within 12 hours), re-attaches to your open trades and carries on &mdash; in the same Auto Trading state it was in. Pressing Stop Bot fully turns this off until you press Start again.</small>
   </fieldset>
 
   <button type="button" id="advancedToggle">▸ Show advanced settings</button>
@@ -348,10 +351,39 @@ button:active { transform: scale(0.98); }
     <small class="hint">How close price has to get to a zone's level to count as "at" it — computed from the ATR of whichever timeframe (H1 or H4) found that zone.</small>
     <div class="row"><label>Zone expires after (hours)</label><input type="number" id="ocZoneExpireHours" value="48" min="1" max="500"></div>
     <div class="row"><label>Enable stretch entries</label><input type="checkbox" id="ocEnableStretchEntries" checked></div>
+    <small class="hint">On by default in this version. This strategy only ever runs ONE batch at a time — while a stretch trade is still open, it blocks your main zone-rejection entries from firing at all. Leave this off unless you specifically want the occasional stretch scalp and are fine with it occasionally costing you a zone entry.</small>
     <div class="row"><label>Stretch size (× H1 ATR)</label><input type="number" id="ocStretchAtrMult" value="0.15" min="0.02" step="0.01"></div>
     <small class="hint">How much further beyond the hour's PREVIOUS extreme a candle has to reach to count as a genuine fresh stretch — this is what triggers a stretch entry, anywhere, with no zone needed.</small>
     <div class="row"><label>Max wick shown (fraction)</label><input type="number" id="ocStretchWickFraction" value="0.3" min="0.05" max="0.9" step="0.05"></div>
     <small class="hint">How much of the candle's own range is allowed to already be a reject wick before it's considered "already showing the wick" — lower means it has to be an even rawer, still-pushing candle to qualify. 0.3 means the close still has to be within the outer 30% of the candle's own range on the push side.</small>
+    <div class="row"><label>Rapid re-entry (hyper-scalp)</label><input type="checkbox" id="ocRapidReentry" checked></div>
+    <small class="hint">On by default in this version. When ON, the moment a zone batch closes, the bot checks again right away (not waiting for the next 1-minute candle) and, if price is still sitting at that same proven zone and still rejecting it, fires a fresh batch &mdash; the same "get in, scout, get out, get back in" you do by hand. Still only ONE zone batch open at a time, and still the same "Entries per trigger" size (3&ndash;4 is plenty; this mode is about more cycles, not bigger batches). The three safety settings below keep it from running away.</small>
+    <div class="row"><label>Max entries per zone per hour</label><input type="number" id="ocRapidMaxPerZone" value="5" min="1" max="30"></div>
+    <small class="hint">Hard cap on how many batches can fire off the same zone within one clock hour (the first entry counts too). A zone that keeps getting hit without reversing is a zone that's breaking, so this stops the bot from hammering it.</small>
+    <div class="row"><label>Pause after losing batches in a row</label><input type="number" id="ocRapidMaxLosses" value="2" min="1" max="10"></div>
+    <small class="hint">If this many batches in a row close at a loss, rapid re-entry pauses until the next clock hour. One winning batch resets the count.</small>
+    <div class="row"><label>Min seconds between batches</label><input type="number" id="ocRapidCooldownSec" value="5" min="0" max="600"></div>
+    <small class="hint">Tiny breather after a batch closes before the next can fire, so it can't double-fire on the same price tick.</small>
+    <div class="row"><label>Emergency stop at the broker</label><input type="checkbox" id="ocBrokerStopOn" checked></div>
+    <small class="hint">ON (default, strongly recommended): every One Candlestick trade is placed with a real stop-loss held by your BROKER, sized so a batch can lose at most about 15% more than your max-loss amount if everything hit it. Unlike the in-page "Max loss" watcher, this still protects you if the page freezes, the computer sleeps, the internet drops or the broker connection stalls. It sits far from price, so ordinary wicks don't touch it. Trailing still moves it up once a trade is in profit.</small>
+    <div class="row"><label>Recovery add-on (advanced, HIGH RISK)</label><input type="checkbox" id="ocRecoveryEnabled" checked></div>
+    <small class="hint">&#9888;&#65039; On by default in this version. When a zone/continuation batch goes against you by the distance below, the bot adds ONE larger trade (a multiple of the normal lot), ideally at a major support/resistance level, then closes the whole batch the moment the combined result gets back to your target. This is averaging down: it often works, but when the market just keeps going the loss is several times bigger than normal. Test on a demo account first and do not use it on small accounts. While this is ON, the "Recovery max loss" below replaces the normal "Max loss per batch" as the hard stop.</small>
+    <div class="row"><label>Recovery distance (pips)</label><input type="number" id="ocRecoveryPips" value="15" min="0" step="1"></div>
+    <small class="hint">How many pips the batch must go against you before a recovery trade is allowed. A pip here is 10 &times; the instrument's smallest price step (forex 0.0001, gold 0.10) unless you set a pip size below. The log prints the exact price distance used so you can sanity-check it. Set to 0 to use the ATR distance below instead.</small>
+    <div class="row"><label>Pip size override (price, optional)</label><input type="number" id="ocRecoveryPipSize" value="0" min="0" step="0.0001"></div>
+    <small class="hint">Leave at 0 for automatic. Only fill this in if the log shows the pip size is wrong for your instrument (for example NAS100 or an index where you count 1.00 as one pip &mdash; enter 1).</small>
+    <div class="row"><label>Fallback distance (&times; H1 ATR)</label><input type="number" id="ocRecoveryAtrMult" value="0.25" min="0.05" step="0.05"></div>
+    <small class="hint">Only used when Recovery distance (pips) is 0.</small>
+    <div class="row"><label>Recovery lot multiplier</label><input type="number" id="ocRecoveryLotMult" value="2" min="1" max="5" step="0.5"></div>
+    <small class="hint">The recovery trade's size = "Lot size per trade" &times; this. 2 means twice the normal lot. Still capped by your hard max lot.</small>
+    <div class="row"><label>Max recovery trades per batch</label><input type="number" id="ocRecoveryMaxSteps" value="1" min="1" max="3"></div>
+    <div class="row"><label>Only recover at a major zone</label><input type="checkbox" id="ocRecoveryRequireZone" checked></div>
+    <small class="hint">ON (recommended): the recovery trade only fires if price is sitting at a strong support (for buys) or resistance (for sells) level. If price blows through with no level, no recovery fires and the normal stop applies.</small>
+    <div class="row"><label>Major zone = min touches</label><input type="number" id="ocRecoveryMinTouches" value="3" min="2" max="10"></div>
+    <div class="row"><label>Recovery exit target ($)</label><input type="number" id="ocRecoveryTargetDollars" value="2" min="0" step="1"></div>
+    <small class="hint">After a recovery trade is added, every trade in the batch closes the moment the combined profit reaches this amount (0 = break even).</small>
+    <div class="row"><label>Recovery max loss ($)</label><input type="number" id="ocRecoveryMaxLoss" value="150" min="1" step="5"></div>
+    <small class="hint">Hard stop on the whole batch including the recovery trade. Set it to an amount you can truly afford to lose. It must be bigger than the loss at the recovery distance or the recovery will never get a chance to fire.</small>
     <div class="row"><label>Max loss per batch ($)</label><input type="number" id="ocMaxLossPerBatch" value="75" min="0" step="5"></div>
     <small class="hint">⚠️ Not a real stop-loss on the chart — a silent background watcher. If a batch's combined floating loss ever reaches this amount (set well beyond your normal quick target range), the bot force-closes every trade in that batch immediately. Normal trades never come close to touching this; it only ever matters on the rare one that runs against you.</small>
     <div class="row"><label>Lot size per trade</label><input type="number" id="ocLots" value="0.02" min="0.01" step="0.01"></div>
@@ -488,6 +520,7 @@ button:active { transform: scale(0.98); }
   <div class="btnrow">
     <button id="startBtn" class="pill-btn">▶ Start Bot</button>
     <button id="stopBtn" class="pill-btn" disabled>■ Stop Bot</button>
+    <button id="applyBtn" class="pill-btn" disabled style="display:none" title="Settings now apply automatically while the bot is running">✔ Apply changes</button>
     <button id="testBuyBtn" class="pill-btn">Test Trade — BUY</button>
     <button id="testSellBtn" class="pill-btn">Test Trade — SELL</button>
     <button id="clearLogBtn">Clear log</button>
@@ -828,7 +861,7 @@ function setInputsDisabled(disabled) {
   var ids = ["instrumentId","strategySelect","modeSelect","accountSizeSelect","timeframe","pivotTf","fastLen","midLen","slowLen","atrMult","requireHtfAgreement",
     "fvgMinGapAtrMult","fvgRequireReaction","fvgMaxBarsActive","fvgStopBufferAtrMult",
     "sdMaxBaseCandles","sdBaseMaxRangeAtrMult","sdBreakoutMinAtrMult","sdRequireReaction","sdMaxRetests","sdMaxBarsActive","sdStopBufferAtrMult",
-    "ocTradeCount","ocMinTouches","ocZoneToleranceAtrMult","ocZoneExpireHours","ocFullCandleAtrMult","ocMaxLossPerBatch","ocLots","ocEnableZoneEntries","ocEnableStretchEntries","ocStretchAtrMult","ocStretchWickFraction","ocEnableContinuationFlip","ocMaxFlipsPerHour",
+    "ocTradeCount","ocMinTouches","ocZoneToleranceAtrMult","ocZoneExpireHours","ocFullCandleAtrMult","ocMaxLossPerBatch","ocLots","ocEnableZoneEntries","ocEnableStretchEntries","ocStretchAtrMult","ocStretchWickFraction","ocEnableContinuationFlip","ocMaxFlipsPerHour","ocRapidReentry","ocRapidMaxPerZone","ocRapidMaxLosses","ocRapidCooldownSec","ocRecoveryEnabled","ocRecoveryPips","ocRecoveryPipSize","ocRecoveryAtrMult","ocRecoveryLotMult","ocRecoveryMaxSteps","ocRecoveryRequireZone","ocRecoveryMinTouches","ocRecoveryTargetDollars","ocRecoveryMaxLoss",
     "t2020FastEma","t2020TrendEma","t2020RetestTolerancePct",
     "baseLots","enableAddOns","addOnLots","maxAddOns","enableRetest","retestLots",
     "cooldownBars","requirePivotSide","maxEntriesPerDay","newsBlackoutOn","newsBlackoutTimes","newsBlackoutMinutes","dailyProfitTarget","dailyMaxLoss","closeOnCircuitBreak","autoTradingOn",
@@ -837,8 +870,15 @@ function setInputsDisabled(disabled) {
     "sizingMode","baseRiskPct","addOnRiskPct","retestRiskPct","levelRetestRiskPct","hardMaxLot",
     "addStopLoss","addTakeProfit","autoTrailingOn","trailAfterProfitDollars","profitLockDistanceDollars","breakevenBufferDollars",
     "slAtrMult","tpAtrMult","volSensitivity","volCustomToggle","volCalmThreshold","volAggressiveThreshold","volCalmFactor","volAggressiveFactor"];
-  ids.forEach(function(id) { document.getElementById(id).disabled = disabled; });
+  // While the bot runs, only settings that decide WHICH data it subscribes to (instrument,
+  // strategy, mode/account-size presets, timeframes, EMA lengths) stay locked — everything else
+  // is editable and goes live with "Apply changes". Stopped = everything unlocked, as before.
+  ids.forEach(function(id) { document.getElementById(id).disabled = disabled && LOCKED_WHILE_RUNNING.indexOf(id) !== -1; });
+  var applyEl = document.getElementById("applyBtn");
+  if (applyEl) applyEl.disabled = !disabled;
 }
+var LOCKED_WHILE_RUNNING = ["instrumentId","strategySelect","modeSelect","accountSizeSelect","timeframe","pivotTf","fastLen","midLen","slowLen","requireHtfAgreement","t2020FastEma","t2020TrendEma"];
+var LOCKED_CFG_KEYS = ["instrumentId","strategy","mode","accountSize","timeframe","pivotTf","fastLen","midLen","slowLen","requireHtfAgreement","t2020FastEma","t2020TrendEma"];
 
 function setStatus(running, stoppedLabel) {
   var el = document.getElementById("status");
@@ -847,6 +887,7 @@ function setStatus(running, stoppedLabel) {
   el.className = running ? "running" : "stopped";
   document.getElementById("startBtn").disabled = running;
   document.getElementById("stopBtn").disabled = !running;
+  document.getElementById("stopBtn").textContent = (running && cfg && !cfg.autoTradingOn) ? "■ Fully stop (ends trade management)" : "■ Stop Bot";
 }
 
 function readConfig() {
@@ -885,6 +926,22 @@ function readConfig() {
     ocStretchAtrMult: parseFloat(document.getElementById("ocStretchAtrMult").value) || 0.15,
     ocStretchWickFraction: parseFloat(document.getElementById("ocStretchWickFraction").value) || 0.3,
     ocEnableContinuationFlip: document.getElementById("ocEnableContinuationFlip").checked,
+    ocRecoveryEnabled: document.getElementById("ocRecoveryEnabled").checked,
+    ocRecoveryPips: isNaN(parseFloat(document.getElementById("ocRecoveryPips").value)) ? 15 : parseFloat(document.getElementById("ocRecoveryPips").value),
+    ocRecoveryPipSize: parseFloat(document.getElementById("ocRecoveryPipSize").value) || 0,
+    ocRecoveryAtrMult: parseFloat(document.getElementById("ocRecoveryAtrMult").value) || 0.25,
+    ocRecoveryLotMult: parseFloat(document.getElementById("ocRecoveryLotMult").value) || 2,
+    ocRecoveryMaxSteps: parseInt(document.getElementById("ocRecoveryMaxSteps").value) || 1,
+    ocRecoveryRequireZone: document.getElementById("ocRecoveryRequireZone").checked,
+    ocRecoveryMinTouches: parseInt(document.getElementById("ocRecoveryMinTouches").value) || 3,
+    ocRecoveryTargetDollars: isNaN(parseFloat(document.getElementById("ocRecoveryTargetDollars").value)) ? 2 : parseFloat(document.getElementById("ocRecoveryTargetDollars").value),
+    ocRecoveryMaxLoss: parseFloat(document.getElementById("ocRecoveryMaxLoss").value) || 150,
+    ocBrokerStopOn: document.getElementById("ocBrokerStopOn").checked,
+    autoResumeOn: document.getElementById("autoResumeOn").checked,
+    ocRapidReentry: document.getElementById("ocRapidReentry").checked,
+    ocRapidMaxPerZone: parseInt(document.getElementById("ocRapidMaxPerZone").value) || 5,
+    ocRapidMaxLosses: parseInt(document.getElementById("ocRapidMaxLosses").value) || 2,
+    ocRapidCooldownSec: isNaN(parseInt(document.getElementById("ocRapidCooldownSec").value)) ? 5 : parseInt(document.getElementById("ocRapidCooldownSec").value),
     ocMaxFlipsPerHour: isNaN(parseInt(document.getElementById("ocMaxFlipsPerHour").value)) ? 1 : parseInt(document.getElementById("ocMaxFlipsPerHour").value),
     t2020FastEma: parseInt(document.getElementById("t2020FastEma").value) || 20,
     t2020TrendEma: parseInt(document.getElementById("t2020TrendEma").value) || 200,
@@ -943,7 +1000,7 @@ function applyConfigToUI(s) {
   var map = ["instrumentId","timeframe","pivotTf","fastLen","midLen","slowLen","atrMult",
     "fvgMinGapAtrMult","fvgMaxBarsActive","fvgStopBufferAtrMult",
     "sdMaxBaseCandles","sdBaseMaxRangeAtrMult","sdBreakoutMinAtrMult","sdMaxRetests","sdMaxBarsActive","sdStopBufferAtrMult",
-    "ocTradeCount","ocMinTouches","ocZoneToleranceAtrMult","ocZoneExpireHours","ocFullCandleAtrMult","ocMaxLossPerBatch","ocLots","ocStretchAtrMult","ocStretchWickFraction","ocMaxFlipsPerHour",
+    "ocTradeCount","ocMinTouches","ocZoneToleranceAtrMult","ocZoneExpireHours","ocFullCandleAtrMult","ocMaxLossPerBatch","ocLots","ocStretchAtrMult","ocStretchWickFraction","ocMaxFlipsPerHour","ocRapidMaxPerZone","ocRapidMaxLosses","ocRapidCooldownSec","ocRecoveryPips","ocRecoveryPipSize","ocRecoveryAtrMult","ocRecoveryLotMult","ocRecoveryMaxSteps","ocRecoveryMinTouches","ocRecoveryTargetDollars","ocRecoveryMaxLoss",
     "t2020FastEma","t2020TrendEma","t2020RetestTolerancePct",
     "baseLots","addOnLots","maxAddOns","retestLots","cooldownBars","levelRetestLots","maxEntriesPerDay",
     "newsBlackoutTimes","newsBlackoutMinutes","sessionStartTime","sessionEndTime",
@@ -969,6 +1026,11 @@ function applyConfigToUI(s) {
   if (s.fvgRequireReaction !== undefined) document.getElementById("fvgRequireReaction").checked = s.fvgRequireReaction;
   if (s.ocEnableZoneEntries !== undefined) document.getElementById("ocEnableZoneEntries").checked = s.ocEnableZoneEntries;
   if (s.ocEnableStretchEntries !== undefined) document.getElementById("ocEnableStretchEntries").checked = s.ocEnableStretchEntries;
+  if (s.ocRecoveryEnabled !== undefined) document.getElementById("ocRecoveryEnabled").checked = s.ocRecoveryEnabled;
+  if (s.ocRecoveryRequireZone !== undefined) document.getElementById("ocRecoveryRequireZone").checked = s.ocRecoveryRequireZone;
+  if (s.ocBrokerStopOn !== undefined) document.getElementById("ocBrokerStopOn").checked = s.ocBrokerStopOn;
+  if (s.autoResumeOn !== undefined) document.getElementById("autoResumeOn").checked = s.autoResumeOn;
+  if (s.ocRapidReentry !== undefined) document.getElementById("ocRapidReentry").checked = s.ocRapidReentry;
   if (s.ocEnableContinuationFlip !== undefined) document.getElementById("ocEnableContinuationFlip").checked = s.ocEnableContinuationFlip;
   if (s.requireHtfAgreement !== undefined) document.getElementById("requireHtfAgreement").checked = s.requireHtfAgreement;
   if (s.volSensitivity !== undefined) document.getElementById("volSensitivity").value = s.volSensitivity;
@@ -1152,6 +1214,27 @@ var BOT_TAG = "QTSniperAutoBot";
 // batchId and onComplete are used only by the One Candlestick strategy, to fire a batch of
 // several trades back-to-back without fighting the single-order-in-flight guard below — every
 // other caller simply omits them, so nothing changes for Original, FVG, or Supply & Demand.
+var ocSkipEmergencyOnce = false;
+var ocEmergencyWarned = false;
+// Price distance for the broker-side emergency stop: sized from the SAME max-loss number the
+// in-page watcher uses, spread across the largest number of lots a batch can reach (recovery
+// included), plus 15% so the in-page watcher normally closes first and this is a true backstop.
+function ocEmergencyStopDistance() {
+  var maxLoss = cfg.ocRecoveryEnabled ? (cfg.ocRecoveryMaxLoss || 150) : (cfg.ocMaxLossPerBatch || 0);
+  if (!(maxLoss > 0)) return null;
+  var instr = Framework.Instruments.get(cfg.instrumentId);
+  if (!instr || !instr.tickSize || !instr.tickValue) {
+    if (!ocEmergencyWarned) { ocEmergencyWarned = true; log("⚠️ Couldn't read this instrument's tick value, so no emergency broker stop was attached to this trade.", "log-warn"); }
+    return null;
+  }
+  var lot = cfg.ocLots || 0.02;
+  var planned = (cfg.ocTradeCount || 3) * lot;
+  if (cfg.ocRecoveryEnabled) planned += lot * (cfg.ocRecoveryLotMult || 2) * (cfg.ocRecoveryMaxSteps || 1);
+  var dollarPerPrice = instr.tickValue / instr.tickSize; // $ per 1.0 price move per 1.0 lot
+  var d = (maxLoss * 1.15) / (planned * dollarPerPrice);
+  return d > 0 ? d : null;
+}
+
 function placeOrder(direction, lots, reason, atrAtEntry, tpPriceOverride, currentPrice, slPriceOverride, batchId, onComplete) {
   if (!lots || lots <= 0) { if (onComplete) onComplete(false); return; } // computeLotSize already logged why, if this was a risk-sizing refusal
   // Hard lot cap — an absolute ceiling enforced here, on every order from every strategy,
@@ -1202,10 +1285,25 @@ function placeOrder(direction, lots, reason, atrAtEntry, tpPriceOverride, curren
     }
   }
 
+  // Emergency broker-side stop (One Candlestick only): a real stop-loss held by the broker so the
+  // max-loss protection survives a frozen page, a sleeping computer or a dropped connection.
+  var emergencySl = false;
+  if (ocSkipEmergencyOnce) { ocSkipEmergencyOnce = false; }
+  else if (batchId && cfg.strategy === "onecandle" && cfg.ocBrokerStopOn && currentPrice) {
+    var eDist = ocEmergencyStopDistance();
+    if (eDist) {
+      var eLevel = isLong ? (currentPrice - eDist) : (currentPrice + eDist);
+      // If the general "Add Stop-Loss" setting already put a stop on this trade, keep whichever
+      // of the two is CLOSER to price, so the max-loss cap can never be weakened by it.
+      if (typeof req.sl !== "number") { req.sl = eLevel; emergencySl = true; }
+      else if (isLong ? (eLevel > req.sl) : (eLevel < req.sl)) { req.sl = eLevel; emergencySl = true; }
+    }
+  }
+
   pendingOrder = true;
   var settings = {};
 
-  var slTxt = typeof req.sl === "number" ? " | SL " + req.sl.toFixed(5) : (!cfg.addStopLoss ? " | NO STOP-LOSS" : "");
+  var slTxt = typeof req.sl === "number" ? " | SL " + req.sl.toFixed(5) + (emergencySl ? " (emergency broker stop)" : "") : (!cfg.addStopLoss ? " | NO STOP-LOSS" : "");
   var tpTxt = "";
   if (typeof req.tp === "number") tpTxt = " | TP " + req.tp.toFixed(5) + (tpPriceOverride ? " (structural level)" : "");
   else if (!cfg.addTakeProfit) tpTxt = " | no fixed TP";
@@ -1228,6 +1326,15 @@ function placeOrder(direction, lots, reason, atrAtEntry, tpPriceOverride, curren
       // Remove the queued management entry — the order never actually opened
       var idx = pendingManagement.findIndex(function(p) { return p.direction === direction; });
       if (idx !== -1) pendingManagement.splice(idx, 1);
+      // If the broker refused because of the emergency stop itself (too close / invalid), retry once
+      // WITHOUT it rather than silently losing the trade — and say so loudly.
+      if (emergencySl && /stop|sl\b|s\/l|distance|invalid|level|price|too close|modif/i.test(errText) && !/cancel|declin|block|denied by user/i.test(errText)) {
+        log("⚠️ Broker rejected the emergency stop-loss (" + errText + ") — retrying this trade once WITHOUT it. The in-page max-loss watcher still applies, but this trade is not protected if the page freezes.", "log-warn");
+        entriesToday = Math.max(0, entriesToday - 1);
+        ocSkipEmergencyOnce = true;
+        placeOrder(direction, lots, reason, atrAtEntry, tpPriceOverride, currentPrice, slPriceOverride, batchId, onComplete);
+        return;
+      }
       if (onComplete) onComplete(false);
     }
   }, settings);
@@ -1270,6 +1377,7 @@ Framework.OnOrderOpen = function (newOrder) {
     if (claim.batchId) {
       if (!ocBatchGroups[claim.batchId]) ocBatchGroups[claim.batchId] = [];
       ocBatchGroups[claim.batchId].push(newOrder.orderId);
+      persistRuntimeState(false);
     }
 
     if (cfg.autoTrailingOn && !dollarPerPriceUnit) {
@@ -1391,6 +1499,8 @@ Framework.OnAccountMetrics = function () {
     if (rtAtrV) applyMissingInitialRisk(rtAtrV);
     if (cfg.autoTrailingOn) manageOpenTrades();
     ocCheckBatchBackstop();
+    ocRecoveryCheck();
+    ocRapidReentryCheck();
   }
 };
 
@@ -1417,6 +1527,10 @@ function applyMissingInitialRisk(atrV) {
       var slDist = atrV * cfg.slAtrMult;
       req.sl = isLong ? (order.openPrice - slDist) : (order.openPrice + slDist);
       actions.push("SL " + req.sl.toFixed(5));
+    }
+    if (cfg.strategy === "onecandle" && cfg.ocBrokerStopOn && m.batchId && !order.sl && typeof req.sl !== "number") {
+      var adoptDist = ocEmergencyStopDistance();
+      if (adoptDist) { req.sl = isLong ? (order.openPrice - adoptDist) : (order.openPrice + adoptDist); actions.push("emergency SL " + req.sl.toFixed(5)); }
     }
     if (cfg.addTakeProfit && !order.tp && cfg.tpAtrMult > 0) {
       var tpDist = atrV * cfg.tpAtrMult;
@@ -1473,6 +1587,11 @@ function manageOpenTrades(currentAtr) {
     // second once trailing started reacting in real time, flooding SendOrder and, if "Confirm
     // every order" is on, popping a confirmation dialog just as fast.
     if (m.mgmtRetryAt && Date.now() < m.mgmtRetryAt) return;
+
+    // A batch with a recovery add-on is exited as ONE unit (combined target / hard stop), so
+    // per-trade breakeven/trailing is skipped for it — otherwise trailing could close the winning
+    // piece alone and leave the losing piece naked.
+    if (m.batchId && ocRecoveryActive[m.batchId] && ocRecoveryActive[m.batchId].count > 0) return;
 
     var isLong = m.direction === "buy";
     var price = order.closePrice; // current exit price for an open trade
@@ -1991,6 +2110,18 @@ var ocLastBatchHourKey = null;   // which hour that batch was fired in — a con
 var ocStretchState = { active: false, direction: null, batchId: null, entriesFired: 0, extremeSoFar: null, hourKey: null };
 
 var ocFlipsThisHour = 0; // how many continuation flips have already fired in the current hour — capped by ocMaxFlipsPerHour
+var ocFullSizeAnnouncedHourKey = null; // which hour we've already posted the "just became full-size" summary for
+var ocRestoreMap = {};   // orderId -> { batchId, lots } remembered from before a reload
+var ocRestoredCount = 0;
+var ocLivePriceChecked = false;
+var ocRecoveryPipLogged = false;
+var ocRecoveryActive = {};             // batchId -> { count, lastPrice, noZoneLogged } for batches that have a recovery add-on
+var ocZoneEntryCounts = {};            // hourKey_zoneLevel -> how many batches have fired off that zone this hour (rapid mode cap)
+var ocBatchLastFloat = {};             // batchId -> last seen combined floating P/L, used to judge win/loss when it closes
+var ocConsecLossBatches = 0;           // rapid mode: consecutive losing batches
+var ocRapidPausedHourKey = null;       // rapid mode: paused until this hour ends
+var ocLastBatchClosedAtMs = 0;         // rapid mode: for the cooldown
+var ocColorMismatchLogged = {};        // hourKey_zoneLevel keys already logged for a touched-but-wrong-direction zone this hour
 
 function ocUpdateHourTracker(candle) {
   var hourKey = Math.floor(Date.now() / 3600000);
@@ -2041,45 +2172,155 @@ function ocHasOpenBatch() {
 // zone trigger (one-shot batch, gated behind nothing else currently being open) and the stretch
 // trigger (can add on repeatedly as the same push keeps extending). Both require the current
 // hour to already be a genuine, full-size push before anything can fire at all.
+//
+// The zone trigger does NOT need a previous hour's range to work off — it only needs THIS
+// candle's own high/low against the zone level, and THIS hour's own accumulated range against
+// the full-size threshold, both of which are valid from the very first candle of a fresh hour.
+// Only the stretch trigger genuinely needs a previous hour's high/low to measure a "fresh
+// extension" against, so only that check is skipped on a fresh hour's opening candle — a real,
+// fast move that touches a proven zone right at the top of the hour is no longer silently missed.
+// Returns true only if there's currently an open batch that is NOT a stretch batch (i.e. a zone
+// rejection or continuation batch). Stretch batch ids are prefixed "ocstretch"; zone/continuation
+// batch ids are prefixed plain "oc" — that prefix alone is enough to tell them apart without any
+// extra bookkeeping. Used to let zone entries ignore an open stretch trade entirely, while still
+// refusing to stack a SECOND zone batch on top of one that's already open.
+function ocHasOpenZoneBatch() {
+  var id = ocOpenBatchId();
+  return id !== null && id.indexOf("ocstretch") !== 0;
+}
+
+// ---- Rapid re-entry (hyper-scalp) -------------------------------------------------------
+// Off unless the checkbox is on. Allowed-to-fire test shared by the candle-close path and the
+// instant path: per-zone-per-hour cap, and the loss-streak pause.
+function ocRapidAllowsZone(z) {
+  if (!cfg.ocRapidReentry) return true;
+  if (ocRapidPausedHourKey !== null && ocRapidPausedHourKey === ocHourState.hourKey) return false;
+  var cap = cfg.ocRapidMaxPerZone || 5;
+  var used = ocZoneEntryCounts[ocHourState.hourKey + "_" + z.level.toFixed(6)] || 0;
+  if (used >= cap) {
+    var capKey = "cap_" + ocHourState.hourKey + "_" + z.level.toFixed(6);
+    if (!ocColorMismatchLogged[capKey]) {
+      ocColorMismatchLogged[capKey] = true;
+      log("One Candlestick: zone " + z.level.toFixed(5) + " already used its " + cap + " entries this hour — standing aside on it until the next hour.", "log-info");
+    }
+    return false;
+  }
+  return true;
+}
+
+// Called on every live account update (and right after a batch closes) — does not wait for the
+// M1 candle to close. Uses the still-forming M1 candle's live price. Same rules as the normal
+// zone entry (proven zone, hour color matches), plus: price must still be at the zone (not
+// broken through it), cooldown elapsed, one zone batch at a time, caps/pause from above.
+function ocRapidReentryCheck() {
+  if (!cfg || !isRunning || cfg.strategy !== "onecandle" || !cfg.ocRapidReentry || !cfg.ocEnableZoneEntries || !cfg.autoTradingOn) return;
+  if (!ocStoreM1 || ocStoreM1.length < 2 || ocHourState.hourOpen === null) return;
+  if (ocHasOpenZoneBatch()) return;
+  if (Date.now() - ocLastBatchClosedAtMs < (cfg.ocRapidCooldownSec || 0) * 1000) return;
+  if (Math.floor(Date.now() / 3600000) !== ocHourState.hourKey) return; // wait for the candle-close path to roll the hour tracker
+  var live = null;
+  try { live = ocStoreM1.GetCandle(0); } catch (e) { live = null; }
+  if (!ocLivePriceChecked) {
+    ocLivePriceChecked = true;
+    log(live && typeof live.c === "number" ? "Rapid re-entry: live price reading works on this platform." : "⚠️ Rapid re-entry: this platform did not give a live price reading, so rapid re-entry cannot fire (normal zone entries are unaffected).", live && typeof live.c === "number" ? "log-info" : "log-warn");
+  }
+  if (!live || typeof live.c !== "number" || typeof live.h !== "number" || typeof live.l !== "number") return;
+  var h1AtrV = (ocStoreH1 && ocStoreH1.ta[0] && ocStoreH1.ta[0].GetValue(1)) || null;
+  if (!h1AtrV) return;
+  var price = live.c;
+  var hourColor = ocCurrentHourColor(price);
+  if (!hourColor) return;
+  var minTouches = cfg.ocMinTouches || 2;
+  for (var i = 0; i < ocZones.length; i++) {
+    var z = ocZones[i];
+    if (z.touches < minTouches) continue;
+    var tol = z.tolerance;
+    var touched = live.l <= z.level + tol && live.h >= z.level - tol;
+    if (!touched) continue;
+    // still AT the zone and rejecting it, not broken through (2x tolerance of room beyond)
+    if (z.type === "resistance" && hourColor === "green" && price <= z.level + tol && price >= z.level - 2 * tol) {
+      if (!ocRapidAllowsZone(z)) continue;
+      log("One Candlestick rapid re-entry: price still rejecting resistance " + z.level.toFixed(5) + " — firing again.", "log-info");
+      ocFireBatch("sell", z, h1AtrV, price, "rejection");
+      return;
+    }
+    if (z.type === "support" && hourColor === "red" && price >= z.level - tol && price <= z.level + 2 * tol) {
+      if (!ocRapidAllowsZone(z)) continue;
+      log("One Candlestick rapid re-entry: price still rejecting support " + z.level.toFixed(5) + " — firing again.", "log-info");
+      ocFireBatch("buy", z, h1AtrV, price, "rejection");
+      return;
+    }
+  }
+}
+
 function ocCheckM1Trigger(candle, h1AtrV) {
   var prevHourKey = ocHourState.hourKey;
   var prevHourLow = ocHourState.hourLow;
   var prevHourHigh = ocHourState.hourHigh;
   ocUpdateHourTracker(candle);
 
-  if (ocHourState.hourKey !== prevHourKey) {
-    // A new clock hour just started — any in-progress stretch sequence from the old hour is over.
+  var newHourStarted = (ocHourState.hourKey !== prevHourKey);
+  if (newHourStarted) {
+    // A new clock hour just started — any in-progress stretch sequence from the old hour is over,
+    // and any "touched but wrong direction" notices from the old hour no longer apply.
     ocStretchState = { active: false, direction: null, batchId: null, entriesFired: 0, extremeSoFar: null, hourKey: null };
-    return; // nothing to compare this candle against yet — the very first candle of a fresh hour
+    ocColorMismatchLogged = {};
+    ocZoneEntryCounts = {};
   }
 
-  if (!ocIsFullSizeHour(h1AtrV)) return;
-
-  if (cfg.ocEnableStretchEntries) {
-    ocCheckStretchTrigger(candle, h1AtrV, prevHourLow, prevHourHigh);
-  }
-
-  if (cfg.ocEnableZoneEntries && !ocHasOpenBatch()) {
+  // Zone entries — the strategy's core, bread-and-butter signal: a proven zone gets touched and
+  // rejected in the right direction. This fires on its own merit and does NOT wait for the
+  // broader hour to already be a big push, and does NOT get blocked by an open stretch trade —
+  // stretch is the opportunistic add-on here, never allowed to crowd out the main signal. The one
+  // guardrail kept: it still won't stack a second zone batch on top of one that's already open, so
+  // rejection trades are never double-fired on top of each other.
+  if (cfg.ocEnableZoneEntries && !ocHasOpenZoneBatch()) {
     var provenZones = ocZones.filter(function (z) { return z.touches >= (cfg.ocMinTouches || 2); });
-    if (provenZones.length === 0) return;
+    var hourColor = provenZones.length > 0 ? ocCurrentHourColor(candle.c) : null;
 
-    var hourColor = ocCurrentHourColor(candle.c);
-    if (!hourColor) return;
+    if (hourColor) {
+      for (var i = 0; i < provenZones.length; i++) {
+        var z = provenZones[i];
+        var touchedZone = candle.l <= z.level + z.tolerance && candle.h >= z.level - z.tolerance;
+        if (!touchedZone) continue;
+        if (!ocRapidAllowsZone(z)) continue;
 
-    for (var i = 0; i < provenZones.length; i++) {
-      var z = provenZones[i];
-      var touchedZone = candle.l <= z.level + z.tolerance && candle.h >= z.level - z.tolerance;
-      if (!touchedZone) continue;
+        if (z.type === "resistance" && hourColor === "green") {
+          ocFireBatch("sell", z, h1AtrV, candle.c, "rejection");
+          break; // one zone trigger per M1 close — keeps behavior simple and predictable
+        }
+        if (z.type === "support" && hourColor === "red") {
+          ocFireBatch("buy", z, h1AtrV, candle.c, "rejection");
+          break;
+        }
 
-      if (z.type === "resistance" && hourColor === "green") {
-        ocFireBatch("sell", z, h1AtrV, candle.c, "rejection");
-        return; // one zone trigger per M1 close — keeps behavior simple and predictable
-      }
-      if (z.type === "support" && hourColor === "red") {
-        ocFireBatch("buy", z, h1AtrV, candle.c, "rejection");
-        return;
+        // Zone is being touched right now, but the hour's own direction doesn't match this zone's
+        // type (e.g. price dipped into a support zone during a green hour). No entry fires here by
+        // design — a resistance zone only ever sells on a green hour, a support zone only ever buys
+        // on a red one — but it's worth surfacing once so "proven zone, no trade" isn't a mystery.
+        var mismatchKey = ocHourState.hourKey + "_" + z.level.toFixed(6);
+        if (!ocColorMismatchLogged[mismatchKey]) {
+          ocColorMismatchLogged[mismatchKey] = true;
+          log("One Candlestick: touched proven " + z.type + " " + z.level.toFixed(5) + " on " + cfg.instrumentId +
+              ", but this hour is running " + hourColor + " — wrong direction for this zone, no entry.", "log-info");
+        }
       }
     }
+  }
+
+  // Stretch entries — the opportunistic add-on, unchanged: still requires the broader hour to
+  // already be a genuine, full-size push, and still refuses to start while ANY other batch (zone
+  // or stretch) is open, via ocCheckStretchTrigger's own internal check below.
+  if (!ocIsFullSizeHour(h1AtrV)) return;
+
+  if (ocFullSizeAnnouncedHourKey !== ocHourState.hourKey) {
+    ocFullSizeAnnouncedHourKey = ocHourState.hourKey;
+    log("One Candlestick: hour just became full-size on " + cfg.instrumentId +
+        " — stretch entries are now eligible if price keeps pushing further (zone entries don't need this and fire independently).", "log-info");
+  }
+
+  if (cfg.ocEnableStretchEntries && !newHourStarted) {
+    ocCheckStretchTrigger(candle, h1AtrV, prevHourLow, prevHourHigh);
   }
 }
 
@@ -2171,6 +2412,7 @@ function ocFireBatch(direction, zone, atrV, currentPrice, actionType) {
   ocLastBatchType = actionType;
   ocLastBatchDirection = direction;
   ocLastBatchHourKey = ocHourState.hourKey;
+  if (zone) { var zk = ocHourState.hourKey + "_" + zone.level.toFixed(6); ocZoneEntryCounts[zk] = (ocZoneEntryCounts[zk] || 0) + 1; }
   var reason = (actionType === "continuation")
     ? "One Candlestick — continuation with the hour's own push"
     : "One Candlestick — rejection off " + zone.type + " " + zone.level.toFixed(5) + " (tested " + zone.touches + "x)";
@@ -2205,6 +2447,7 @@ function ocOnBatchFullyClosed() {
   var continuationDirection = ocLastBatchDirection === "sell" ? "buy" : "sell";
   ocLastBatchType = null; // consumed — never fire the same flip twice either way
 
+  if (!cfg.autoTradingOn) { return; } // Auto Trading OFF (manage-only): never open a new batch, flip included
   if (!cfg.ocEnableContinuationFlip) {
     log("One Candlestick: rejection closed — continuation flip is turned off, sitting flat until the next signal.", "log-info");
     return;
@@ -2232,9 +2475,107 @@ function ocOnBatchFullyClosed() {
 // next M1 close), which is what makes the continuation flip fire immediately instead of up to a
 // minute late. Runs on every real-time account update, same cadence as trailing and the daily
 // circuit breaker.
+// ---- Recovery add-on (advanced, off by default) ---------------------------------------
+// For each open non-stretch batch: if it has gone against us by (ocRecoveryAtrMult x H1 ATR)
+// from its average entry (or from the last recovery entry), add ONE larger trade — optionally
+// only when price is at a proven major zone of the right type. Once a recovery trade exists,
+// the whole batch is closed as a unit when its combined floating profit reaches the target.
+// The hard stop is the "Recovery max loss" applied in ocCheckBatchBackstop.
+function ocRecoveryCheck() {
+  if (!cfg || !isRunning || cfg.strategy !== "onecandle" || !cfg.ocRecoveryEnabled) return;
+  var h1AtrV = (ocStoreH1 && ocStoreH1.ta[0] && ocStoreH1.ta[0].GetValue(1)) || null;
+  Object.keys(ocBatchGroups).forEach(function (batchId) {
+    if (batchId.indexOf("ocstretch") === 0) return;
+    var ids = ocBatchGroups[batchId];
+    if (!ids || ids.length === 0) return;
+    var rec = ocRecoveryActive[batchId];
+    var total = 0, sumEntry = 0, n = 0, price = null, dir = null;
+    ids.forEach(function (id) {
+      var o = Framework.Orders.get(id); var m = managedOrders[id];
+      if (!o || o.closeTime) return;
+      if (typeof o.profit === "number") total += o.profit;
+      if (m && typeof m.entryPrice === "number") { sumEntry += m.entryPrice; n++; dir = m.direction; }
+      if (typeof o.closePrice === "number") price = o.closePrice;
+    });
+    if (n === 0 || price === null || !dir) return;
+
+    // Combined exit once a recovery trade exists.
+    if (rec && rec.count > 0 && !rec.closing && total >= (cfg.ocRecoveryTargetDollars || 0)) {
+      rec.closing = true;
+      log("✅ One Candlestick recovery: batch " + batchId + " back to $" + total.toFixed(2) + " — closing the whole batch.", "log-info");
+      ids.forEach(function (id) { forceCloseQueue[id] = { attempts: 0 }; });
+      attemptForceCloses();
+      return;
+    }
+    if (rec && rec.closing) return;
+    if (!cfg.autoTradingOn) return; // manage-only mode: the combined exit above still runs, but no new recovery trade is added
+    if (!h1AtrV) return;
+    var maxSteps = cfg.ocRecoveryMaxSteps || 1;
+    if (rec && rec.count >= maxSteps) return;
+    if (rec && rec.pending) return;
+
+    var isLong = dir === "buy";
+    var ref = (rec && typeof rec.lastPrice === "number") ? rec.lastPrice : (sumEntry / n);
+    var adverse = isLong ? (ref - price) : (price - ref);
+    var needDist = (cfg.ocRecoveryAtrMult || 0.25) * h1AtrV;
+    if (cfg.ocRecoveryPips > 0) {
+      var pipSz = cfg.ocRecoveryPipSize > 0 ? cfg.ocRecoveryPipSize : null;
+      if (!pipSz) {
+        var pInstr = Framework.Instruments.get(cfg.instrumentId);
+        if (pInstr && pInstr.tickSize) pipSz = pInstr.tickSize * 10;
+      }
+      if (!pipSz) {
+        if (!rec || !rec.pipWarned) {
+          log("One Candlestick recovery: can't read this instrument's price step, so pips can't be converted — using the ATR distance instead.", "log-warn");
+          if (!rec) rec = ocRecoveryActive[batchId] = { count: 0, lastPrice: null };
+          rec.pipWarned = true;
+        }
+      } else {
+        needDist = cfg.ocRecoveryPips * pipSz;
+        if (!ocRecoveryPipLogged) {
+          ocRecoveryPipLogged = true;
+          log("One Candlestick recovery: 1 pip = " + pipSz + " in price on " + cfg.instrumentId + ", so " + cfg.ocRecoveryPips + " pips = " + needDist.toFixed(5) + ". If that looks wrong, set 'Pip size override'.", "log-info");
+        }
+      }
+    }
+    if (adverse < needDist) return;
+
+    if (cfg.ocRecoveryRequireZone) {
+      var minT = cfg.ocRecoveryMinTouches || 3;
+      var wantType = isLong ? "support" : "resistance";
+      var atZone = null;
+      for (var i = 0; i < ocZones.length; i++) {
+        var z = ocZones[i];
+        if (z.type !== wantType || z.touches < minT) continue;
+        if (Math.abs(price - z.level) <= z.tolerance * 2) { atZone = z; break; }
+      }
+      if (!atZone) {
+        if (!rec) rec = ocRecoveryActive[batchId] = { count: 0, lastPrice: null };
+        if (!rec.noZoneLogged) {
+          rec.noZoneLogged = true;
+          log("One Candlestick recovery: batch " + batchId + " is " + adverse.toFixed(5) + " against us (distance needed " + needDist.toFixed(5) +
+              ") but price is not at a major " + wantType + " (" + minT + "+ touches) — no recovery trade.", "log-info");
+        }
+        return;
+      }
+    }
+
+    if (!rec) rec = ocRecoveryActive[batchId] = { count: 0, lastPrice: null };
+    var lots = (cfg.ocLots || 0.02) * (cfg.ocRecoveryLotMult || 2);
+    lots = Math.round(lots * 100) / 100;
+    rec.pending = true;
+    log("One Candlestick recovery: batch " + batchId + " is " + adverse.toFixed(5) + " against us (needed " + needDist.toFixed(5) +
+        ") — adding " + lots + " lots " + dir.toUpperCase() + " to recover.", "log-warn");
+    placeOrder(dir, lots, "One Candlestick — recovery add-on #" + (rec.count + 1), h1AtrV, null, price, null, batchId, function (ok) {
+      rec.pending = false;
+      if (ok) { rec.count++; rec.lastPrice = price; rec.noZoneLogged = false; }
+    });
+  });
+}
+
 function ocCheckBatchBackstop() {
   if (!cfg || cfg.strategy !== "onecandle") return;
-  var maxLoss = cfg.ocMaxLossPerBatch || 0;
+  var maxLoss = cfg.ocRecoveryEnabled ? (cfg.ocRecoveryMaxLoss || 150) : (cfg.ocMaxLossPerBatch || 0);
   Object.keys(ocBatchGroups).forEach(function (batchId) {
     var orderIds = ocBatchGroups[batchId];
     if (!orderIds || orderIds.length === 0) { delete ocBatchGroups[batchId]; return; }
@@ -2249,9 +2590,27 @@ function ocCheckBatchBackstop() {
     });
     if (stillOpen.length === 0) {
       delete ocBatchGroups[batchId];
+      delete ocRecoveryActive[batchId];
+      persistRuntimeState(false);
+      if (cfg.ocRapidReentry && batchId.indexOf("ocstretch") !== 0) {
+        ocLastBatchClosedAtMs = Date.now();
+        var lastFloat = ocBatchLastFloat[batchId];
+        if (typeof lastFloat === "number") {
+          if (lastFloat < 0) {
+            ocConsecLossBatches++;
+            if (ocConsecLossBatches >= (cfg.ocRapidMaxLosses || 2)) {
+              ocRapidPausedHourKey = Math.floor(Date.now() / 3600000);
+              log("🛑 One Candlestick: " + ocConsecLossBatches + " losing batches in a row — rapid re-entry paused until the next hour.", "log-warn");
+              ocConsecLossBatches = 0;
+            }
+          } else { ocConsecLossBatches = 0; }
+        }
+      }
+      delete ocBatchLastFloat[batchId];
       ocOnBatchFullyClosed();
       return;
     }
+    ocBatchLastFloat[batchId] = totalFloating;
     ocBatchGroups[batchId] = stillOpen;
     if (maxLoss > 0 && totalFloating <= -maxLoss) {
       log("🛑 One Candlestick batch " + batchId + " hit the max loss backstop ($" + totalFloating.toFixed(2) +
@@ -2837,8 +3196,48 @@ function testPlaceOrder(direction) {
 var startConfirmArmed = false;
 var startConfirmTimeout = null;
 
-function startBot() {
-  if (!startConfirmArmed) {
+// Attaches to any already-open trades on this instrument. Safe to call repeatedly — trades already
+// tracked are skipped. After a reload the platform can take a few seconds to hand over its open
+// orders, so auto-resume calls this again a few times. Trades remembered from before the reload
+// are put back into their One Candlestick batch so the max-loss backstop and recovery logic cover
+// them again.
+function reAdoptOpenOrders() {
+  var reAdoptedCount = 0;
+  Framework.Orders.forEach(function (orderId, order) {
+    if (!order || !isBotInstrument(order.instrumentId)) return;
+    if (order.closeTime) return; // historic/closed, not currently open
+    if (order.orderType !== FXB.OrderTypes.BUY && order.orderType !== FXB.OrderTypes.SELL) return; // skip pending orders
+    if (managedOrders[order.orderId]) return; // already tracked
+
+    managedOrders[order.orderId] = {
+      direction: order.orderType === FXB.OrderTypes.BUY ? "buy" : "sell",
+      atrAtEntry: 0,
+      entryPrice: order.openPrice,
+      breakevenApplied: false,
+      lots: null,
+      dollarPerPriceUnit: null,
+      needsInitialRisk: true // if this trade has no SL/TP (e.g. a manual entry), one gets added on the next bar close
+    };
+    if (ocRestoreMap[order.orderId]) {
+      var rm = ocRestoreMap[order.orderId];
+      managedOrders[order.orderId].batchId = rm.batchId;
+      if (rm.lots) managedOrders[order.orderId].lots = rm.lots;
+      if (!ocBatchGroups[rm.batchId]) ocBatchGroups[rm.batchId] = [];
+      if (ocBatchGroups[rm.batchId].indexOf(order.orderId) === -1) ocBatchGroups[rm.batchId].push(order.orderId);
+      ocRestoredCount++;
+    }
+    reAdoptedCount++;
+  });
+  if (reAdoptedCount > 0) {
+    log("Re-adopted " + reAdoptedCount + " already-open trade(s) on " + cfg.instrumentId +
+        " — any missing SL/TP will be added on the next bar close, then breakeven/trailing management begins.", "log-info");
+  }
+
+}
+
+function startBot(skipConfirm, restored) {
+  if (isRunning) return;
+  if (!skipConfirm && !startConfirmArmed) {
     startConfirmArmed = true;
     var startBtnEl = document.getElementById("startBtn");
     startBtnEl.textContent = "⚠️ Click again to confirm — places REAL orders";
@@ -2896,7 +3295,19 @@ function startBot() {
   ocLastBatchDirection = null;
   ocLastBatchHourKey = null;
   ocFlipsThisHour = 0;
+  ocRestoreMap = {}; ocRestoredCount = 0;
+  if (restored && restored.batches) {
+    Object.keys(restored.batches).forEach(function (bid) {
+      restored.batches[bid].forEach(function (e) { ocRestoreMap[e.id] = { batchId: bid, lots: e.lots }; });
+    });
+    if (restored.nextBatchId && restored.nextBatchId > ocNextBatchId) ocNextBatchId = restored.nextBatchId;
+  }
+  ocLivePriceChecked = false; ocRecoveryPipLogged = false; ocRecoveryActive = {}; ocZoneEntryCounts = {}; ocBatchLastFloat = {}; ocConsecLossBatches = 0; ocRapidPausedHourKey = null; ocLastBatchClosedAtMs = 0;
   ocStretchState = { active: false, direction: null, batchId: null, entriesFired: 0, extremeSoFar: null, hourKey: null };
+  if (restored && restored.recovery) {
+    Object.keys(restored.recovery).forEach(function (bid) { ocRecoveryActive[bid] = { count: restored.recovery[bid].count || 0, lastPrice: restored.recovery[bid].lastPrice }; });
+  }
+  stopManageOnlyArmed = false;
 
   log("Strategy: " + strategyDisplayName(cfg.strategy) + " selected.", "log-info");
   if (!cfg.autoTradingOn) {
@@ -2909,29 +3320,7 @@ function startBot() {
   // it already had, but never gets breakeven/trailing management again, because that tracking
   // only ever lived in this browser tab's memory, not saved anywhere. This is very likely what
   // happened to the trade that ran to +$3,000 and gave most of it back.
-  var reAdoptedCount = 0;
-  Framework.Orders.forEach(function (orderId, order) {
-    if (!order || !isBotInstrument(order.instrumentId)) return;
-    if (order.closeTime) return; // historic/closed, not currently open
-    if (order.orderType !== FXB.OrderTypes.BUY && order.orderType !== FXB.OrderTypes.SELL) return; // skip pending orders
-    if (managedOrders[order.orderId]) return; // already tracked
-
-    managedOrders[order.orderId] = {
-      direction: order.orderType === FXB.OrderTypes.BUY ? "buy" : "sell",
-      atrAtEntry: 0,
-      entryPrice: order.openPrice,
-      breakevenApplied: false,
-      lots: null,
-      dollarPerPriceUnit: null,
-      needsInitialRisk: true // if this trade has no SL/TP (e.g. a manual entry), one gets added on the next bar close
-    };
-    reAdoptedCount++;
-  });
-  if (reAdoptedCount > 0) {
-    log("Re-adopted " + reAdoptedCount + " already-open trade(s) on " + cfg.instrumentId +
-        " — any missing SL/TP will be added on the next bar close, then breakeven/trailing management begins.", "log-info");
-  }
-
+  reAdoptOpenOrders();
   entriesToday = 0;
   entriesDayKey = currentDayKey();
   circuitBreakerTripped = false;
@@ -2996,16 +3385,73 @@ function startBot() {
   startHeartbeat();
   startLogPersistence();
 
-  Framework.SaveCategorySettings(cfg);
+  persistRuntimeState(true);
 }
 
+var stopManageOnlyArmed = false;
+var stopManageOnlyTimeout = null;
+function countOpenManaged() {
+  var n = 0;
+  Object.keys(managedOrders).forEach(function (id) { var o = Framework.Orders.get(id); if (o && !o.closeTime) n++; });
+  return n;
+}
+// Stop is now two-stage whenever trades are open. First press: stop NEW entries but keep trailing,
+// breakeven, the max-loss backstop and the daily breaker running on the open trades. A second press
+// (confirmed) ends everything, including that management. With nothing open, one press stops fully.
 function stopBot() {
+  var open = isRunning && cfg ? countOpenManaged() : 0;
+  if (isRunning && cfg && open > 0 && cfg.autoTradingOn) {
+    cfg.autoTradingOn = false;
+    document.getElementById("autoTradingOn").value = "off";
+    setStatus(true);
+    log("Entries stopped. " + open + " open trade(s) are STILL being managed (trailing, breakeven, max-loss backstop). Press the button again to fully stop and end management.", "log-warn");
+    persistRuntimeState(true);
+    return;
+  }
+  if (isRunning && open > 0 && !stopManageOnlyArmed) {
+    stopManageOnlyArmed = true;
+    var sb = document.getElementById("stopBtn");
+    var oldLabel = sb.textContent;
+    sb.textContent = "⚠️ Click again — " + open + " open trade(s) will stop being managed";
+    log("Fully stopping ends trailing/breakeven/backstop on " + open + " open trade(s). Click again within 8 seconds to confirm.", "log-warn");
+    clearTimeout(stopManageOnlyTimeout);
+    stopManageOnlyTimeout = setTimeout(function () { stopManageOnlyArmed = false; setStatus(isRunning); }, 8000);
+    return;
+  }
+  stopManageOnlyArmed = false;
+  clearTimeout(stopManageOnlyTimeout);
   isRunning = false;
   setInputsDisabled(false);
   setStatus(false);
   stopHeartbeat();
   stopLogPersistence();
-  log("Stopped. Existing open trades/pending orders are NOT closed automatically.", "log-warn");
+  persistRuntimeState(true); // records wasRunning=false so a reload does NOT auto-resume after a deliberate stop
+  log("Stopped. Existing open trades/pending orders are NOT closed automatically" +
+      (open > 0 ? " and are no longer being managed" : "") + ".", "log-warn");
+}
+
+// ---- Apply changes while running ------------------------------------------------------------
+function applyLiveChanges() {
+  if (!isRunning || !cfg) return;
+  var fresh = readConfig();
+  var changed = [];
+  var refused = [];
+  Object.keys(fresh).forEach(function (k) {
+    if (LOCKED_CFG_KEYS.indexOf(k) !== -1) return;
+    var oldV = cfg[k], newV = fresh[k];
+    if (typeof newV === "number" && isNaN(newV)) return;
+    if (oldV === newV) return;
+    if (cfg.strategy === "onecandle" && k === "ocMaxLossPerBatch" && !(newV > 0)) { refused.push(k + " (0 would switch the safety backstop off)"); return; }
+    if (k === "ocRecoveryMaxLoss" && !(newV > 0)) { refused.push(k); return; }
+    if (k === "ocLots" && !(newV > 0)) { refused.push(k); return; }
+    changed.push(k + ": " + oldV + " → " + newV);
+    cfg[k] = newV;
+  });
+  if (refused.length) log("⚠️ Not applied (unsafe value): " + refused.join(", "), "log-warn");
+  if (changed.length === 0) { if (!refused.length) log("Apply changes: nothing was different.", "log-info"); return; }
+  log("✔ Applied while running — " + changed.join(" | "), "log-info");
+  setStatus(true);
+  persistRuntimeState(true);
 }
 
 // ---- Log persistence — rides on the same settings save already proven to work, rather than a
@@ -3015,11 +3461,37 @@ function stopBot() {
 // history overnight. Restored automatically on the next load, clearly marked as from before
 // the reload so it's never confused with the current session's own lines.
 var logPersistInterval = null;
+var lastPersistMs = 0;
+var persistLaterTimer = null;
+// Saves everything needed to pick up exactly where we left off after a reload: settings, whether
+// the bot was running, and which open trades belong to which One Candlestick batch.
+function persistRuntimeState(force) {
+  if (!cfg) return;
+  var now = Date.now();
+  if (!force && now - lastPersistMs < 3000) {
+    // Too soon after the last save — don't drop it, save a moment later instead.
+    if (!persistLaterTimer) persistLaterTimer = setTimeout(function () { persistLaterTimer = null; persistRuntimeState(true); }, 3100 - (now - lastPersistMs));
+    return;
+  }
+  lastPersistMs = now;
+  cfg.logHistory = logHistoryBuffer;
+  cfg.wasRunning = !!isRunning;
+  cfg.savedAtMs = now;
+  var batches = {};
+  Object.keys(ocBatchGroups).forEach(function (bid) {
+    var ids = ocBatchGroups[bid];
+    if (!ids || ids.length === 0) return;
+    batches[bid] = ids.map(function (id) { var m = managedOrders[id]; return { id: id, lots: m && m.lots ? m.lots : null }; });
+  });
+  var rec = {};
+  Object.keys(ocRecoveryActive).forEach(function (bid) { var r = ocRecoveryActive[bid]; rec[bid] = { count: r.count || 0, lastPrice: r.lastPrice === undefined ? null : r.lastPrice }; });
+  cfg.ocPersist = { nextBatchId: ocNextBatchId, batches: batches, recovery: rec };
+  try { Framework.SaveCategorySettings(cfg); } catch (e) {}
+}
 function startLogPersistence() {
   logPersistInterval = setInterval(function () {
     if (!cfg) return;
-    cfg.logHistory = logHistoryBuffer;
-    Framework.SaveCategorySettings(cfg);
+    persistRuntimeState(true);
   }, 60000);
 }
 function stopLogPersistence() {
@@ -3150,10 +3622,55 @@ Framework.OnLoad = function () {
     }
 
     log("Ready. Review settings, then press Start Bot.", "log-info");
+
+    // Auto-resume after a reload: only if the bot was running when the page went away (a deliberate
+    // Stop records "not running"), the option is on, and the save is recent.
+    if (settings.wasRunning && settings.autoResumeOn !== false && settings.savedAtMs && (Date.now() - settings.savedAtMs) < 12 * 3600 * 1000 && settings.instrumentId && settings.strategy && settings.accountSize && settings.mode) {
+      log("↻ The bot was running before this page reloaded — resuming automatically in a few seconds" + (settings.autoTradingOn === false ? " (entries stay OFF, managing open trades only)" : "") + "…", "log-warn");
+      setTimeout(function () {
+        if (isRunning) return;
+        startBot(true, settings.ocPersist || null);
+        if (isRunning) {
+          // Open trades can take a few seconds to be handed over by the platform after a reload — re-attach again.
+          [8000, 20000, 45000].forEach(function (ms) {
+            setTimeout(function () {
+              if (!isRunning) return;
+              var before = Object.keys(managedOrders).length;
+              reAdoptOpenOrders();
+              var after = Object.keys(managedOrders).length;
+              if (after > before) log("↻ Re-attached to " + (after - before) + " more open trade(s) after the reload (" + ocRestoredCount + " put back into their batch).", "log-info");
+            }, ms);
+          });
+        }
+      }, 4000);
+    }
   });
 
-  document.getElementById("startBtn").addEventListener("click", startBot);
+  document.getElementById("startBtn").addEventListener("click", function () { startBot(false, null); });
   document.getElementById("stopBtn").addEventListener("click", stopBot);
+  document.getElementById("applyBtn").addEventListener("click", applyLiveChanges);
+  // Settings apply automatically while the bot runs: the moment a field is changed (committed with
+  // Enter / clicking away for typed numbers, instantly for dropdowns and checkboxes), the new value
+  // goes live. A half-typed (empty) number is ignored, and unsafe values are still refused.
+  var autoApplyTimer = null;
+  Array.prototype.forEach.call(document.querySelectorAll("input[id], select[id]"), function (el) {
+    if (LOCKED_WHILE_RUNNING.indexOf(el.id) !== -1 || el.id === "autoTradingOn" || el.id === "testLots") return;
+    el.addEventListener("change", function () {
+      if (!isRunning || !cfg) return;
+      if (el.type === "number" && el.value === "") return; // mid-edit — wait until a real number is entered
+      clearTimeout(autoApplyTimer);
+      autoApplyTimer = setTimeout(applyLiveChanges, 300);
+    });
+  });
+  // Auto Trading switch applies instantly while running — no Apply step.
+  document.getElementById("autoTradingOn").addEventListener("change", function () {
+    if (!isRunning || !cfg) return;
+    cfg.autoTradingOn = this.value === "on";
+    log("Auto Trading switched " + (cfg.autoTradingOn ? "ON — new entries allowed again." : "OFF — no new entries; open trades keep being managed."), "log-warn");
+    stopManageOnlyArmed = false;
+    setStatus(true);
+    persistRuntimeState(true);
+  });
   document.getElementById("testBuyBtn").addEventListener("click", function () { testPlaceOrder("buy"); });
   document.getElementById("testSellBtn").addEventListener("click", function () { testPlaceOrder("sell"); });
   document.getElementById("clearLogBtn").addEventListener("click", function () {
